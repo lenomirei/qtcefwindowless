@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
     }
     CefSettings settings;
     settings.multi_threaded_message_loop = 1;
+    settings.windowless_rendering_enabled = 1;
     CefRefPtr<CefApp> app = new QtCefApp();
     CefInitialize(main_args, settings, app.get(), nullptr);
 
