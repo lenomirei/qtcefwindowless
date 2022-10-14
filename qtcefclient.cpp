@@ -10,6 +10,11 @@ CefRefPtr<CefRenderHandler> QtCefClient::GetRenderHandler()
     return this;
 }
 
+CefRefPtr<CefLifeSpanHandler> QtCefClient::GetLifeSpanHandler()
+{
+    return this;
+}
+
 void QtCefClient::OnPaint( CefRefPtr< CefBrowser > browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
 {
     if (delegate_)
@@ -20,4 +25,14 @@ void QtCefClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
     if (delegate_)
         delegate_->GetViewRect(browser, rect);
+}
+
+void QtCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
+{
+    browser_ = browser;
+}
+
+CefRefPtr<CefBrowser> QtCefClient::GetBrowser()
+{
+    return browser_;
 }

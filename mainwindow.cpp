@@ -14,6 +14,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    cef_widget_->close();
+    cef_widget_ = nullptr;
     delete ui;
 }
 
@@ -28,15 +30,6 @@ void MainWindow::showEvent(QShowEvent* event)
 
 void MainWindow::OnClicked()
 {
-    CefWindowInfo window_info;
-    HWND hwnd = (HWND)ui->widget->winId();
-    window_info.parent_window = hwnd;
-    window_info.SetAsChild(hwnd, CefRect(0, 0, 500, 500));
-    window_info.windowless_rendering_enabled = 1;
-
-    CefBrowserSettings browser_settings;
-    browser_settings.windowless_frame_rate = 30;
-    QtCefClient* client = new QtCefClient(static_cast<QSharedPointer<QtCefClient::Delegate>>(cef_widget_));
-    CefBrowserHost::CreateBrowser(window_info, client, "https://www.baidu.com", browser_settings, nullptr, nullptr);
+    cef_widget_->CreateBrowser();
 }
 
