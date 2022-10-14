@@ -1,26 +1,30 @@
 #include "cefwidget.h"
 
-#include <QPainter>
-#include <QPixmap>
 #include <QBitmap>
 #include <QDatetime>
 #include <QMouseEvent>
-#include <QWheelEvent>
 #include <QKeyEvent>
+#include <QPainter>
+#include <QPixmap>
+#include <QWheelEvent>
+#include <QWindow>
 
 CefWidget::CefWidget(QWidget *parent)
     : QWidget{parent}
 {
     setStyleSheet("background-color: red");
-    buffer_ = new uchar[500*500*4];
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
-}
 
+}
 
 void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
 {
-    memcpy(buffer_,buffer,500*500*4);
+    if (!buffer_)
+    {
+        buffer_ = new uchar[width*height*4];
+    }
+    memcpy(buffer_,buffer,width * height * 4);
     update();
 }
 
@@ -33,7 +37,8 @@ void CefWidget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    QImage frame = QImage(static_cast<const uchar*>(buffer_), 500, 500, QImage::Format_ARGB32_Premultiplied);
+    QImage frame = QImage(static_cast<const uchar*>(buffer_), 500 * ratio_, 500 * ratio_, QImage::Format_ARGB32_Premultiplied);
+    frame.setDevicePixelRatio(ratio_);
     painter.drawImage(QRect(QPoint(0,0), QSize(frame.width(), frame.height())), frame);
 }
 
@@ -131,4 +136,36 @@ void CefWidget::wheelEvent(QWheelEvent* event)
     mouse_event.x = pos.x();
     mouse_event.y = pos.y();
     client_->GetBrowser()->GetHost()->SendMouseWheelEvent(mouse_event, event->angleDelta().x(), event->angleDelta().y());
+}
+
+bool CefWidget::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info)
+{
+    Qt::CursorShape shape;
+    switch (type) {
+    case CT_POINTER:
+        shape = Qt::CursorShape::ArrowCursor;
+        break;
+    case CT_HAND:
+        shape = Qt::CursorShape::PointingHandCursor;
+        break;
+    case CT_IBEAM:
+        shape = Qt::CursorShape::IBeamCursor;
+        break;
+    default:
+        break;
+    }
+
+    QMetaObject::invokeMethod(this, [this, shape](){
+        setCursor(shape);
+    });
+
+    return true;
+}
+
+void CefWidget::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info)
+{
+    QWindow* window = windowHandle();
+    QScreen* screen = window->screen();
+    ratio_ = screen->devicePixelRatio();
+    screen_info.device_scale_factor = ratio_;
 }

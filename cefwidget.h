@@ -14,7 +14,10 @@ public:
 
 protected:
     void OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) override;
+    bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info) override;
     void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
+    void GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) override;
+
     void paintEvent(QPaintEvent *event) override;
     void showEvent(QShowEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
@@ -26,8 +29,9 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
 
 private:
-    uchar* buffer_;
+    uchar* buffer_ = nullptr;
     CefRefPtr<QtCefClient> client_;
+    float ratio_ = 1.25f;
 
 };
 
