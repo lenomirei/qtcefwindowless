@@ -9,6 +9,7 @@ class CefWidget : public QWidget, public QtCefClient::Delegate
     Q_OBJECT
 public:
     CefWidget(QWidget *parent = nullptr);
+    virtual ~CefWidget();
 
     void CreateBrowser();
 

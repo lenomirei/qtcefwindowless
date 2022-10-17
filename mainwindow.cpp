@@ -10,6 +10,11 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::OnClicked);
+    cef_widget_ = QSharedPointer<CefWidget>::create(ui->widget);
+    cef_widget_->setAttribute(Qt::WA_StyledBackground, true);
+    cef_widget_->setStyleSheet("background-color: red");
+    cef_widget_->resize(500,500);
+    cef_widget_->show();
 }
 
 MainWindow::~MainWindow()
@@ -21,11 +26,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::showEvent(QShowEvent* event)
 {
-     cef_widget_ = QSharedPointer<CefWidget>::create(ui->widget);
-     cef_widget_->setAttribute(Qt::WA_StyledBackground, true);
-     cef_widget_->setStyleSheet("background-color: red");
-     cef_widget_->resize(500,500);
-     cef_widget_->show();
 }
 
 void MainWindow::OnClicked()

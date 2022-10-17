@@ -15,6 +15,10 @@ CefWidget::CefWidget(QWidget *parent)
     setStyleSheet("background-color: red");
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+}
+
+CefWidget::~CefWidget()
+{
 
 }
 
@@ -71,8 +75,8 @@ void CefWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     QPointF point = event->position();
     CefMouseEvent mouse_event;
-    mouse_event.x = point.x();
-    mouse_event.y = point.y();
+    mouse_event.x = point.x() / ratio_;
+    mouse_event.y = point.y() / ratio_;
     if (event->button() == CefBrowserHost::MouseButtonType::MBT_RIGHT)
     {
         mouse_event.x = event->globalPosition().x();
@@ -80,17 +84,19 @@ void CefWidget::mouseReleaseEvent(QMouseEvent* event)
     }
 
     CefBrowserHost::MouseButtonType type = event->button() == Qt::LeftButton ? CefBrowserHost::MouseButtonType::MBT_LEFT : CefBrowserHost::MouseButtonType::MBT_RIGHT;
-    client_->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, true, 1);
+    if (client_ && client_->GetBrowser())
+        client_->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, true, 1);
 }
 
 void CefWidget::mousePressEvent(QMouseEvent* event)
 {
     QPointF point = event->position();
     CefMouseEvent mouse_event;
-    mouse_event.x = point.x();
-    mouse_event.y = point.y();
+    mouse_event.x = point.x() / ratio_;
+    mouse_event.y = point.y() / ratio_;
     CefBrowserHost::MouseButtonType type = event->button() == Qt::LeftButton ? CefBrowserHost::MouseButtonType::MBT_LEFT : CefBrowserHost::MouseButtonType::MBT_RIGHT;
-    client_->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, false, 1);
+    if (client_ && client_->GetBrowser())
+        client_->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, false, 1);
 }
 
 void CefWidget::CreateBrowser()
@@ -135,7 +141,8 @@ void CefWidget::wheelEvent(QWheelEvent* event)
     QPointF pos = event->position();
     mouse_event.x = pos.x();
     mouse_event.y = pos.y();
-    client_->GetBrowser()->GetHost()->SendMouseWheelEvent(mouse_event, event->angleDelta().x(), event->angleDelta().y());
+    if (client_ && client_->GetBrowser())
+        client_->GetBrowser()->GetHost()->SendMouseWheelEvent(mouse_event, event->angleDelta().x(), event->angleDelta().y());
 }
 
 bool CefWidget::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info)
