@@ -60,8 +60,8 @@ void CefWidget::mouseMoveEvent(QMouseEvent* event)
 {
     QPointF point = event->position();
     CefMouseEvent mouse_event;
-    mouse_event.x = point.x();
-    mouse_event.y = point.y();
+    mouse_event.x = point.x() / ratio_;
+    mouse_event.y = point.y() / ratio_;
     mouse_event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
     if (client_ && client_->GetBrowser() && client_->GetBrowser()->GetHost())
         client_->GetBrowser()->GetHost()->SendMouseMoveEvent(mouse_event, false);
