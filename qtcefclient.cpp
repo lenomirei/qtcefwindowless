@@ -44,7 +44,8 @@ bool QtCefClient::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& sc
 
 void QtCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
-    browser_ = browser;
+    if (!browser->IsPopup())
+        browser_ = browser;
 }
 
 CefRefPtr<CefBrowser> QtCefClient::GetBrowser()

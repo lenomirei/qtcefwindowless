@@ -103,8 +103,8 @@ void CefWidget::CreateBrowser()
 {
     CefWindowInfo window_info;
     HWND hwnd = (HWND)winId();
-    window_info.parent_window = hwnd;
-    window_info.SetAsChild(hwnd, CefRect(0, 0, 500, 500));
+//    window_info.parent_window = hwnd;
+//    window_info.SetAsChild(hwnd, CefRect(0, 0, 500, 500));
     window_info.windowless_rendering_enabled = 1;
 
     CefBrowserSettings browser_settings;
