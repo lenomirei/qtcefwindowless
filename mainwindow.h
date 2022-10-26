@@ -19,12 +19,8 @@ public:
 protected:
     void showEvent(QShowEvent* event) override;
 
-private slots:
-    void OnClicked();
-
 private:
     Ui::MainWindow *ui;
-
-    QSharedPointer<CefWidget> cef_widget_ = nullptr;
+    CefWidget* cef_widget_ = nullptr;
 };
 #endif // MAINWINDOW_H

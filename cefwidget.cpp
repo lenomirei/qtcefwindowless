@@ -12,38 +12,47 @@
 CefWidget::CefWidget(QWidget *parent)
     : QWidget{parent}
 {
-    setStyleSheet("background-color: red");
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 }
 
 CefWidget::~CefWidget()
 {
-    client_->CloseBrowser();
-    client_ = nullptr;
+    if (client_)
+    {
+        client_->CloseBrowser();
+        client_ = nullptr;
+    }
 }
 
 void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
 {
-    if (!buffer_)
+    if (!frame_.buffer_)
     {
-        buffer_ = new uchar[width*height*4];
+        // 4 bytes per pixel
+        frame_.buffer_ = new uchar[width * height * 4];
     }
-    memcpy(buffer_,buffer,width * height * 4);
+
+    // 这里单独改用一个结构体存储width和height是因为cef计算出来的width和height的取整方式可能和qt int计算浮点数后存放到int里面的取整方式不同，导致paint时有一丢丢不同会出现斜着的图片
+    frame_.width = width;
+    frame_.height = height;
+    memcpy(frame_.buffer_,buffer,width * height * 4);
     update();
 }
 
 void CefWidget::showEvent(QShowEvent* event)
 {
-    this->resize(500,500);
+    CreateBrowser();
 }
 
 void CefWidget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    QImage frame = QImage(static_cast<const uchar*>(buffer_), 500 * ratio_, 500 * ratio_, QImage::Format_ARGB32_Premultiplied);
+    QImage frame = QImage(static_cast<const uchar*>(frame_.buffer_), frame_.width, frame_.height, QImage::Format_ARGB32_Premultiplied);
     frame.setDevicePixelRatio(ratio_);
+//    QString filename = QString("D:/work/testimage/lalala_%1").arg(QDateTime::currentMSecsSinceEpoch());
+//    frame.save(filename, "PNG");
     painter.drawImage(QRect(QPoint(0,0), QSize(frame.width(), frame.height())), frame);
 }
 
@@ -104,8 +113,7 @@ void CefWidget::CreateBrowser()
 {
     CefWindowInfo window_info;
     HWND hwnd = (HWND)winId();
-//    window_info.parent_window = hwnd;
-//    window_info.SetAsChild(hwnd, CefRect(0, 0, 500, 500));
+    window_info.parent_window = hwnd;
     window_info.windowless_rendering_enabled = 1;
 
     CefBrowserSettings browser_settings;
