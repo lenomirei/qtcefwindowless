@@ -28,6 +28,7 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 
 private:
     uchar* buffer_ = nullptr;

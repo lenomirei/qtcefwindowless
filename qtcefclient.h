@@ -15,9 +15,10 @@ public:
         virtual bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info) = 0;
         virtual void GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) = 0;
     };
-    QtCefClient(QSharedPointer<Delegate> delegate);
+    QtCefClient(Delegate* delegate);
 
     CefRefPtr<CefBrowser> GetBrowser();
+    void CloseBrowser();
 
 protected:
     CefRefPtr<CefRenderHandler> GetRenderHandler() override;
@@ -33,7 +34,7 @@ protected:
     bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info) override;
 
 private:
-    QSharedPointer<Delegate> delegate_;
+    Delegate* delegate_ = nullptr;
     CefRefPtr<CefBrowser> browser_;
 
 private:

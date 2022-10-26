@@ -1,6 +1,6 @@
 #include "qtcefclient.h"
 
-QtCefClient::QtCefClient(QSharedPointer<Delegate> delegate) : delegate_(delegate)
+QtCefClient::QtCefClient(Delegate* delegate) : delegate_(delegate)
 {
 
 }
@@ -59,4 +59,10 @@ bool QtCefClient::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle 
         return delegate_->OnCursorChange(browser, cursor, type, custom_cursor_info);
     else
         return false;
+}
+
+void QtCefClient::CloseBrowser()
+{
+    delegate_ = nullptr;
+    bool close_result =  browser_->GetHost()->TryCloseBrowser();
 }

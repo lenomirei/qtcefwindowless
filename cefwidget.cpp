@@ -19,7 +19,8 @@ CefWidget::CefWidget(QWidget *parent)
 
 CefWidget::~CefWidget()
 {
-
+    client_->CloseBrowser();
+    client_ = nullptr;
 }
 
 void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
@@ -109,7 +110,7 @@ void CefWidget::CreateBrowser()
 
     CefBrowserSettings browser_settings;
     browser_settings.windowless_frame_rate = 30;
-    client_ = new QtCefClient(static_cast<QSharedPointer<QtCefClient::Delegate>>(this));
+    client_ = new QtCefClient(this);
     CefBrowserHost::CreateBrowser(window_info, client_, "https://www.baidu.com", browser_settings, nullptr, nullptr);
 }
 
@@ -175,4 +176,9 @@ void CefWidget::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& scre
     QScreen* screen = window->screen();
     ratio_ = screen->devicePixelRatio();
     screen_info.device_scale_factor = ratio_;
+}
+
+void CefWidget::closeEvent(QCloseEvent* event)
+{
+    event->accept();
 }
