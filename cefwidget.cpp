@@ -190,3 +190,11 @@ void CefWidget::closeEvent(QCloseEvent* event)
 {
     event->accept();
 }
+
+void CefWidget::resizeEvent(QResizeEvent* event)
+{
+    if (client_ && client_->GetBrowser())
+    {
+        client_->GetBrowser()->GetHost()->WasResized();
+    }
+}

@@ -11,11 +11,11 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    QHBoxLayout* layout = new QHBoxLayout(ui->widget);
+    QHBoxLayout* layout = new QHBoxLayout(ui->centralwidget);
     layout->setContentsMargins(0,0,0,0);
-    ui->widget->setLayout(layout);
-    cef_widget_ = new CefWidget(ui->widget);
-    layout->addWidget(cef_widget_);
+    ui->centralwidget->setLayout(layout);
+    cef_widget_ = new CefWidget(ui->centralwidget);
+    ui->centralwidget->layout()->addWidget(cef_widget_);
     cef_widget_->show();
 }
 
