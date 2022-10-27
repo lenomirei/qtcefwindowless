@@ -2,6 +2,7 @@
 #define CEFWIDGET_H
 
 #include <QWidget>
+#include <QMutex>
 #include "qtcefclient.h"
 
 class CefWidget : public QWidget, public QtCefClient::Delegate
@@ -14,12 +15,6 @@ public:
     void CreateBrowser();
 
 protected:
-    struct Frame
-    {
-        int width = 0;
-        int height = 0;
-        uchar* buffer_ = nullptr;
-    };
     void OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) override;
     bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info) override;
     void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
@@ -38,9 +33,10 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
-    Frame frame_;
+    QPixmap pixmap_;
     CefRefPtr<QtCefClient> client_;
     float ratio_ = 1.25f;
+    QMutex mutex_;
 
 };
 
