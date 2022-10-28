@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 8.0.0, 2022-10-26T19:38:28. -->
+<!-- Written by QtCreator 8.0.0, 2022-10-28T11:12:38. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -345,6 +345,7 @@
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">qtcefwindowless</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.qtcefwindowless</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">qtcefwindowless</value>
+    <value type="QString" key="RunConfiguration.Arguments">--remote-debugging-port=9222</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>

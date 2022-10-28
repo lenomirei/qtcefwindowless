@@ -72,8 +72,8 @@ void CefWidget::mouseMoveEvent(QMouseEvent* event)
 {
     QPointF point = event->position();
     CefMouseEvent mouse_event;
-    mouse_event.x = point.x() / ratio_;
-    mouse_event.y = point.y() / ratio_;
+    mouse_event.x = point.x();
+    mouse_event.y = point.y();
     mouse_event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
     if (client_ && client_->GetBrowser() && client_->GetBrowser()->GetHost())
         client_->GetBrowser()->GetHost()->SendMouseMoveEvent(mouse_event, false);
@@ -83,8 +83,8 @@ void CefWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     QPointF point = event->position();
     CefMouseEvent mouse_event;
-    mouse_event.x = point.x() / ratio_;
-    mouse_event.y = point.y() / ratio_;
+    mouse_event.x = point.x();
+    mouse_event.y = point.y();
     if (event->button() == CefBrowserHost::MouseButtonType::MBT_RIGHT)
     {
         mouse_event.x = event->globalPosition().x();
@@ -100,8 +100,8 @@ void CefWidget::mousePressEvent(QMouseEvent* event)
 {
     QPointF point = event->position();
     CefMouseEvent mouse_event;
-    mouse_event.x = point.x() / ratio_;
-    mouse_event.y = point.y() / ratio_;
+    mouse_event.x = point.x();
+    mouse_event.y = point.y();
     CefBrowserHost::MouseButtonType type = event->button() == Qt::LeftButton ? CefBrowserHost::MouseButtonType::MBT_LEFT : CefBrowserHost::MouseButtonType::MBT_RIGHT;
     if (client_ && client_->GetBrowser())
         client_->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, false, 1);
