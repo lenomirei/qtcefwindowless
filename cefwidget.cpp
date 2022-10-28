@@ -46,7 +46,7 @@ void CefWidget::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
     mutex_.lock();
-    painter.drawPixmap(QRect(QPoint(0,0), pixmap_.size()), pixmap_);
+    painter.drawPixmap(QRect(QPoint(0,0), geometry().size()), pixmap_);
     mutex_.unlock();
 
 //    QString filename = QString("D:/work/testimage/lalala_%1").arg(QDateTime::currentMSecsSinceEpoch());
