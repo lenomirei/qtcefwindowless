@@ -27,12 +27,13 @@ CefWidget::~CefWidget()
 
 void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
 {
-    mutex_.lock();
     QImage frame = QImage(static_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32_Premultiplied);
     frame.setDevicePixelRatio(ratio_);
     // 这里单独改用一个结构体存储width和height是因为cef计算出来的width和height的取整方式可能和qt int计算浮点数后存放到int里面的取整方式不同，导致paint时有一丢丢不同会出现斜着的图片
-    pixmap_ = QPixmap::fromImage(frame);
-    mutex_.unlock();
+    QPixmap pixmap = QPixmap::fromImage(frame);
+    QMetaObject::invokeMethod(this, [this, pm = std::move(pixmap)](){
+        pixmap_ = std::move(pm);
+    });
     update();
 }
 
@@ -45,9 +46,7 @@ void CefWidget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    mutex_.lock();
     painter.drawPixmap(QRect(QPoint(0,0), geometry().size()), pixmap_);
-    mutex_.unlock();
 
 //    QString filename = QString("D:/work/testimage/lalala_%1").arg(QDateTime::currentMSecsSinceEpoch());
 //    frame.save(filename, "PNG");

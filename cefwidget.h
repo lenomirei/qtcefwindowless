@@ -35,8 +35,7 @@ protected:
 private:
     QPixmap pixmap_;
     CefRefPtr<QtCefClient> client_;
-    float ratio_ = 1.25f;
-    QMutex mutex_;
+    float ratio_ = 1.0f;
 
 };
 
