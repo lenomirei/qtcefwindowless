@@ -1,16 +1,16 @@
 #include "cefwidget.h"
 
-#include <QBitmap>
 #include <QDatetime>
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QPainter>
-#include <QPixmap>
+#include <QScreen>
 #include <QWheelEvent>
 #include <QWindow>
 
 CefWidget::CefWidget(QWidget *parent)
-    : QWidget{parent}
+    : QOpenGLWidget(parent),
+      texture_(nullptr)
 {
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
@@ -27,13 +27,18 @@ CefWidget::~CefWidget()
 
 void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
 {
-    QImage frame = QImage(static_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32_Premultiplied);
-    frame.setDevicePixelRatio(ratio_);
+    mt_.lock();
+    frame_buffer_ = new uchar[width * height * 4];
+    memset(frame_buffer_, 0, width * height * 4);
+    memcpy(frame_buffer_, buffer, width * height * 4);
+    width_ = width;
+    height_ = height;
+    mt_.unlock();
+    //QImage frame = QImage(static_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32_Premultiplied);
+    //frame.setDevicePixelRatio(ratio_);
     // 这里单独改用一个结构体存储width和height是因为cef计算出来的width和height的取整方式可能和qt int计算浮点数后存放到int里面的取整方式不同，导致paint时有一丢丢不同会出现斜着的图片
-    QPixmap pixmap = QPixmap::fromImage(frame);
-    QMetaObject::invokeMethod(this, [this, pm = std::move(pixmap)](){
-        pixmap_ = std::move(pm);
-    });
+    //QPixmap pixmap = QPixmap::fromImage(frame);
+
     update();
 }
 
@@ -42,16 +47,16 @@ void CefWidget::showEvent(QShowEvent* event)
     CreateBrowser();
 }
 
-void CefWidget::paintEvent(QPaintEvent* event)
-{
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.drawPixmap(QRect(QPoint(0,0), geometry().size()), pixmap_);
-
-//    QString filename = QString("D:/work/testimage/lalala_%1").arg(QDateTime::currentMSecsSinceEpoch());
-//    frame.save(filename, "PNG");
-//    painter.drawImage(QRect(QPoint(0,0), QSize(frame.width(), frame.height())), frame);
-}
+//void CefWidget::paintEvent(QPaintEvent* event)
+//{
+//    QPainter painter(this);
+//    painter.setRenderHint(QPainter::Antialiasing, true);
+//    painter.drawPixmap(QRect(QPoint(0,0), geometry().size()), pixmap_);
+//
+////    QString filename = QString("D:/work/testimage/lalala_%1").arg(QDateTime::currentMSecsSinceEpoch());
+////    frame.save(filename, "PNG");
+////    painter.drawImage(QRect(QPoint(0,0), QSize(frame.width(), frame.height())), frame);
+//}
 
 void CefWidget::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
@@ -69,7 +74,7 @@ void CefWidget::mouseDoubleClickEvent(QMouseEvent* event)
 
 void CefWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    QPointF point = event->position();
+    QPointF point = event->pos();
     CefMouseEvent mouse_event;
     mouse_event.x = point.x();
     mouse_event.y = point.y();
@@ -80,14 +85,14 @@ void CefWidget::mouseMoveEvent(QMouseEvent* event)
 
 void CefWidget::mouseReleaseEvent(QMouseEvent* event)
 {
-    QPointF point = event->position();
+    QPointF point = event->pos();
     CefMouseEvent mouse_event;
     mouse_event.x = point.x();
     mouse_event.y = point.y();
     if (event->button() == CefBrowserHost::MouseButtonType::MBT_RIGHT)
     {
-        mouse_event.x = event->globalPosition().x();
-        mouse_event.y = event->globalPosition().y();
+        mouse_event.x = event->globalPos().x();
+        mouse_event.y = event->globalPos().y();
     }
 
     CefBrowserHost::MouseButtonType type = event->button() == Qt::LeftButton ? CefBrowserHost::MouseButtonType::MBT_LEFT : CefBrowserHost::MouseButtonType::MBT_RIGHT;
@@ -97,7 +102,7 @@ void CefWidget::mouseReleaseEvent(QMouseEvent* event)
 
 void CefWidget::mousePressEvent(QMouseEvent* event)
 {
-    QPointF point = event->position();
+    QPointF point = event->pos();
     CefMouseEvent mouse_event;
     mouse_event.x = point.x();
     mouse_event.y = point.y();
@@ -188,10 +193,132 @@ void CefWidget::closeEvent(QCloseEvent* event)
     event->accept();
 }
 
-void CefWidget::resizeEvent(QResizeEvent* event)
-{
+//void CefWidget::resizeEvent(QResizeEvent* event)
+//{
+//    if (client_ && client_->GetBrowser())
+//    {
+//        client_->GetBrowser()->GetHost()->WasResized();
+//    }
+//}
+
+void CefWidget::initializeGL() {
+    initializeOpenGLFunctions();
+
+    // 简单顶点 + 纹理坐标
+    GLfloat vertices[] = {
+        // positions   // texCoords
+        -1.0f, -1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 1.0f,
+        -1.0f,  1.0f,  0.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 0.0f,
+    };
+
+    vbo_.create();
+    vbo_.bind();
+    vbo_.allocate(vertices, sizeof(vertices));
+
+    vao_.create();
+    vao_.bind();
+
+    shader_.addShaderFromSourceCode(QOpenGLShader::Vertex,
+        R"(
+        attribute vec2 position;
+        attribute vec2 texCoord;
+        varying vec2 vTexCoord;
+        void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+            vTexCoord = texCoord;
+        })");
+
+    shader_.addShaderFromSourceCode(QOpenGLShader::Fragment,
+        R"(
+        uniform sampler2D tex;
+        varying vec2 vTexCoord;
+        void main() {
+            gl_FragColor = texture2D(tex, vTexCoord);
+        })");
+
+    shader_.link();
+
+    shader_.bind();
+
+    int posLoc = shader_.attributeLocation("position");
+    int texLoc = shader_.attributeLocation("texCoord");
+
+    shader_.enableAttributeArray(posLoc);
+    shader_.enableAttributeArray(texLoc);
+
+    shader_.setAttributeBuffer(posLoc, GL_FLOAT, 0, 2, 4 * sizeof(GLfloat));
+    shader_.setAttributeBuffer(texLoc, GL_FLOAT, 2 * sizeof(GLfloat), 2, 4 * sizeof(GLfloat));
+
+    vao_.release();
+    vbo_.release();
+    shader_.release();
+}
+
+void CefWidget::resizeGL(int w, int h) {
+    glViewport(0, 0, w, h);
     if (client_ && client_->GetBrowser())
     {
         client_->GetBrowser()->GetHost()->WasResized();
     }
+}
+
+void CefWidget::paintGL() {
+    mt_.lock();
+    UpdateFrame(frame_buffer_, width_, height_);
+    frame_buffer_ = nullptr;
+    width_ = 0;
+    height_ = 0;
+    mt_.unlock();
+
+
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    if (!texture_ || !texture_->isCreated()) return;
+
+    shader_.bind();
+    vao_.bind();
+
+    glActiveTexture(GL_TEXTURE0);
+    texture_->bind();
+    shader_.setUniformValue("tex", 0);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    texture_->release();
+    vao_.release();
+    shader_.release();
+}
+
+void CefWidget::UpdateFrame(const uchar* buffer, int width, int height) {
+    if (!buffer) {
+        return;
+    }
+    makeCurrent();
+    if (!texture_ || texture_->width() != width || texture_->height() != height) {
+        if (texture_) {
+            delete texture_;
+        }
+
+        texture_ = new QOpenGLTexture(QOpenGLTexture::Target2D);
+        texture_->setFormat(QOpenGLTexture::RGBA8_UNorm); // 内部存储格式
+        texture_->setSize(width, height);
+        texture_->allocateStorage();
+        texture_->setMinMagFilters(QOpenGLTexture::Linear, QOpenGLTexture::Linear);
+        texture_->setWrapMode(QOpenGLTexture::ClampToEdge);
+    }
+
+    texture_->bind();
+
+    texture_->setData(QOpenGLTexture::QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, buffer);
+
+    texture_->release();
+
+    doneCurrent();
+
+    delete[] buffer;
+
+    QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
 }
