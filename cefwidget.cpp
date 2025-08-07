@@ -8,6 +8,9 @@
 #include <QWheelEvent>
 #include <QWindow>
 
+#include "include/base/cef_callback.h"
+#include "include/wrapper/cef_closure_task.h"
+
 CefWidget::CefWidget(QWidget *parent)
     : QOpenGLWidget(parent),
       texture_(nullptr)
@@ -28,16 +31,19 @@ CefWidget::~CefWidget()
 void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
 {
     mt_.lock();
-    frame_buffer_ = new uchar[width * height * 4];
+    if (!frame_buffer_ || width != width_ || height != height_) {
+        if (frame_buffer_) {
+            delete[] frame_buffer_;
+        }
+        frame_buffer_ = new uchar[width * height * 4];
+        width_ = width;
+        height_ = height;
+    }
     memset(frame_buffer_, 0, width * height * 4);
     memcpy(frame_buffer_, buffer, width * height * 4);
-    width_ = width;
-    height_ = height;
+    
     mt_.unlock();
-    //QImage frame = QImage(static_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32_Premultiplied);
-    //frame.setDevicePixelRatio(ratio_);
-    // 这里单独改用一个结构体存储width和height是因为cef计算出来的width和height的取整方式可能和qt int计算浮点数后存放到int里面的取整方式不同，导致paint时有一丢丢不同会出现斜着的图片
-    //QPixmap pixmap = QPixmap::fromImage(frame);
+
 
     update();
 }
@@ -47,16 +53,6 @@ void CefWidget::showEvent(QShowEvent* event)
     CreateBrowser();
 }
 
-//void CefWidget::paintEvent(QPaintEvent* event)
-//{
-//    QPainter painter(this);
-//    painter.setRenderHint(QPainter::Antialiasing, true);
-//    painter.drawPixmap(QRect(QPoint(0,0), geometry().size()), pixmap_);
-//
-////    QString filename = QString("D:/work/testimage/lalala_%1").arg(QDateTime::currentMSecsSinceEpoch());
-////    frame.save(filename, "PNG");
-////    painter.drawImage(QRect(QPoint(0,0), QSize(frame.width(), frame.height())), frame);
-//}
 
 void CefWidget::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
@@ -124,26 +120,50 @@ void CefWidget::CreateBrowser()
     CefBrowserHost::CreateBrowser(window_info, client_, "https://www.baidu.com", browser_settings, nullptr, nullptr);
 }
 
+void MyFunc(int arg) {
+    int leno = arg;
+}
+
 void CefWidget::keyPressEvent(QKeyEvent* event)
 {
     CefKeyEvent key_event;
-    key_event.type = KEYEVENT_CHAR;
-    key_event.windows_key_code = event->key();
+    key_event.type = KEYEVENT_RAWKEYDOWN;
+    key_event.windows_key_code = event->nativeVirtualKey();
+    key_event.native_key_code = event->nativeScanCode();
 
-    if (client_ && client_->GetBrowser() && client_->GetBrowser()->GetHost())
-        client_->GetBrowser()->GetHost()->SendKeyEvent(key_event);
+    CefPostTask(CefThreadId::TID_UI, base::BindOnce(
+        [](CefRefPtr<QtCefClient> client, CefKeyEvent key_event) {
+            if (client && client->GetBrowser() && client->GetBrowser()->GetHost())
+                client->GetBrowser()->GetHost()->SendKeyEvent(key_event);
+        }, client_, key_event));
+
+    if (!event->text().isEmpty() && event->text()[0].isPrint()) {
+        CefKeyEvent char_event = key_event;
+        char_event.type = KEYEVENT_CHAR;
+        char_event.character = event->text()[0].unicode();
+        CefPostTask(CefThreadId::TID_UI, base::BindOnce(
+            [](CefRefPtr<QtCefClient> client, CefKeyEvent key_event) {
+                if (client && client->GetBrowser() && client->GetBrowser()->GetHost())
+                    client->GetBrowser()->GetHost()->SendKeyEvent(key_event);
+            }, client_, char_event));
+    }
 
     QWidget::keyPressEvent(event);
 }
 
 void CefWidget::keyReleaseEvent(QKeyEvent* event)
 {
-//    CefKeyEvent key_event;
-//    key_event.type = KEYEVENT_CHAR;
+   CefKeyEvent key_event;
+   key_event.type = KEYEVENT_KEYUP;
+   key_event.windows_key_code = event->nativeVirtualKey();
+   key_event.native_key_code = event->nativeScanCode();
 
-//    key_event.windows_key_code = event->key();
-//    if (client_ && client_->GetBrowser() && client_->GetBrowser()->GetHost())
-//        client_->GetBrowser()->GetHost()->SendKeyEvent(key_event);
+
+   CefPostTask(CefThreadId::TID_UI, base::BindOnce(
+       [](CefRefPtr<QtCefClient> client, CefKeyEvent key_event) {
+           if (client && client->GetBrowser() && client->GetBrowser()->GetHost())
+               client->GetBrowser()->GetHost()->SendKeyEvent(key_event);
+       }, client_, key_event));
 }
 
 void CefWidget::wheelEvent(QWheelEvent* event)
@@ -152,8 +172,16 @@ void CefWidget::wheelEvent(QWheelEvent* event)
     QPointF pos = event->position();
     mouse_event.x = pos.x();
     mouse_event.y = pos.y();
-    if (client_ && client_->GetBrowser())
-        client_->GetBrowser()->GetHost()->SendMouseWheelEvent(mouse_event, event->angleDelta().x(), event->angleDelta().y());
+
+    int delta_x = event->angleDelta().x();
+    int delta_y = event->angleDelta().y();
+    CefPostTask(CefThreadId::TID_UI, base::BindOnce(
+        [](CefRefPtr<QtCefClient> client, CefMouseEvent mouse_event, int delta_x, int delta_y) {
+            if (client && client->GetBrowser())
+                client->GetBrowser()->GetHost()->SendMouseWheelEvent(mouse_event, delta_x, delta_y);
+        },
+        client_, mouse_event, delta_x, delta_y));
+    
 }
 
 bool CefWidget::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info)
