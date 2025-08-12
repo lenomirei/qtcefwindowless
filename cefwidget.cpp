@@ -36,16 +36,14 @@ void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintEl
             delete[] frame_buffer_;
         }
         frame_buffer_ = new uchar[width * height * 4];
+        memset(frame_buffer_, 0, width * height * 4);
         width_ = width;
         height_ = height;
     }
-    memset(frame_buffer_, 0, width * height * 4);
     memcpy(frame_buffer_, buffer, width * height * 4);
-    
     mt_.unlock();
 
-
-    update();
+    QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
 }
 
 void CefWidget::showEvent(QShowEvent* event)
@@ -295,9 +293,6 @@ void CefWidget::resizeGL(int w, int h) {
 void CefWidget::paintGL() {
     mt_.lock();
     UpdateFrame(frame_buffer_, width_, height_);
-    frame_buffer_ = nullptr;
-    width_ = 0;
-    height_ = 0;
     mt_.unlock();
 
 
@@ -324,7 +319,6 @@ void CefWidget::UpdateFrame(const uchar* buffer, int width, int height) {
     if (!buffer) {
         return;
     }
-    makeCurrent();
     if (!texture_ || texture_->width() != width || texture_->height() != height) {
         if (texture_) {
             delete texture_;
@@ -343,10 +337,4 @@ void CefWidget::UpdateFrame(const uchar* buffer, int width, int height) {
     texture_->setData(QOpenGLTexture::QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, buffer);
 
     texture_->release();
-
-    doneCurrent();
-
-    delete[] buffer;
-
-    QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
 }
