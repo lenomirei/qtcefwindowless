@@ -8,6 +8,7 @@
 #include <QOpenGLBuffer>
 #include <QOpenGLVertexArrayObject>
 #include <QMutex>
+#include <QTimer>
 #include "qtcefclient.h"
 
 class CefWidget : public QOpenGLWidget, public QOpenGLFunctions, public QtCefClient::Delegate
@@ -42,14 +43,18 @@ protected:
 
     void UpdateFrame(const uchar* buffer, int width, int height);
 
+    void OnTimeout();
+
 private:
     CefRefPtr<QtCefClient> client_;
     float ratio_ = 1.0f;
     QOpenGLTexture* texture_;
     uchar* frame_buffer_ = nullptr;
+    uchar* front_frame_buffer_ = nullptr;
     int width_ = 0;
     int height_ = 0;
     QMutex mt_;
+    QTimer* timer_ = nullptr;
 
     QOpenGLShaderProgram shader_;
     QOpenGLBuffer vbo_;

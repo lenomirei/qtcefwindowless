@@ -17,6 +17,11 @@ CefWidget::CefWidget(QWidget *parent)
 {
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+
+    timer_ = new QTimer(this);
+    timer_->setInterval(40);
+    timer_->setSingleShot(false);
+    connect(timer_, &QTimer::timeout, this, &CefWidget::OnTimeout);
 }
 
 CefWidget::~CefWidget()
@@ -34,16 +39,28 @@ void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintEl
     if (!frame_buffer_ || width != width_ || height != height_) {
         if (frame_buffer_) {
             delete[] frame_buffer_;
+            frame_buffer_ = nullptr;
+        }
+        if (front_frame_buffer_) {
+            delete[] front_frame_buffer_;
+            front_frame_buffer_ = nullptr;
         }
         frame_buffer_ = new uchar[width * height * 4];
         memset(frame_buffer_, 0, width * height * 4);
+        front_frame_buffer_ = new uchar[width * height * 4];
+        memset(front_frame_buffer_, 0, width * height * 4);
+
         width_ = width;
         height_ = height;
     }
     memcpy(frame_buffer_, buffer, width * height * 4);
     mt_.unlock();
 
-    QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
+    if (!timer_->isActive()) {
+        QMetaObject::invokeMethod(this, [this]() {
+            timer_->start();
+        });
+    }
 }
 
 void CefWidget::showEvent(QShowEvent* event)
@@ -292,7 +309,7 @@ void CefWidget::resizeGL(int w, int h) {
 
 void CefWidget::paintGL() {
     mt_.lock();
-    UpdateFrame(frame_buffer_, width_, height_);
+    UpdateFrame(front_frame_buffer_, width_, height_);
     mt_.unlock();
 
 
@@ -337,4 +354,16 @@ void CefWidget::UpdateFrame(const uchar* buffer, int width, int height) {
     texture_->setData(QOpenGLTexture::QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, buffer);
 
     texture_->release();
+}
+
+void CefWidget::OnTimeout() {
+    mt_.lock();
+    if (!frame_buffer_ || !front_frame_buffer_) {
+        mt_.unlock();
+        return;
+    }
+    memcpy(front_frame_buffer_, frame_buffer_, width_ * height_ * 4);
+    mt_.unlock();
+
+    update();
 }
