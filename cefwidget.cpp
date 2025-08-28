@@ -22,6 +22,11 @@ CefWidget::CefWidget(QWidget *parent)
     timer_->setInterval(40);
     timer_->setSingleShot(false);
     connect(timer_, &QTimer::timeout, this, &CefWidget::OnTimeout);
+
+    debounce_timer_ = new QTimer(this);
+    debounce_timer_->setSingleShot(true);
+    debounce_timer_->setInterval(500);
+    connect(debounce_timer_, &QTimer::timeout, this, &CefWidget::NotifyResizeToCEF);
 }
 
 CefWidget::~CefWidget()
@@ -45,10 +50,16 @@ void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintEl
             delete[] front_frame_buffer_;
             front_frame_buffer_ = nullptr;
         }
+
         frame_buffer_ = new uchar[width * height * 4];
         memset(frame_buffer_, 0, width * height * 4);
         front_frame_buffer_ = new uchar[width * height * 4];
         memset(front_frame_buffer_, 0, width * height * 4);
+
+        if (width != width_ || height != height_) {
+            memcpy(front_frame_buffer_, buffer, width * height * 4);
+            need_recreate_texture_ = true;
+        }
 
         width_ = width;
         height_ = height;
@@ -300,7 +311,17 @@ void CefWidget::initializeGL() {
 }
 
 void CefWidget::resizeGL(int w, int h) {
+    qInfo() << "w: " << w << " h: " << h;
     glViewport(0, 0, w, h);
+
+    if (!debounce_timer_) {
+        return;
+    }
+
+    debounce_timer_->start();
+}
+
+void CefWidget::NotifyResizeToCEF() {
     if (client_ && client_->GetBrowser())
     {
         client_->GetBrowser()->GetHost()->WasResized();
@@ -313,7 +334,7 @@ void CefWidget::paintGL() {
     mt_.unlock();
 
 
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (!texture_ || !texture_->isCreated()) return;
@@ -336,7 +357,7 @@ void CefWidget::UpdateFrame(const uchar* buffer, int width, int height) {
     if (!buffer) {
         return;
     }
-    if (!texture_ || texture_->width() != width || texture_->height() != height) {
+    if (!texture_ || need_recreate_texture_) {
         if (texture_) {
             delete texture_;
         }
@@ -347,10 +368,11 @@ void CefWidget::UpdateFrame(const uchar* buffer, int width, int height) {
         texture_->allocateStorage();
         texture_->setMinMagFilters(QOpenGLTexture::Linear, QOpenGLTexture::Linear);
         texture_->setWrapMode(QOpenGLTexture::ClampToEdge);
+
+        need_recreate_texture_ = false;
     }
 
     texture_->bind();
-
     texture_->setData(QOpenGLTexture::QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, buffer);
 
     texture_->release();

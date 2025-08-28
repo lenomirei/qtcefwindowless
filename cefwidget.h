@@ -43,7 +43,9 @@ protected:
 
     void UpdateFrame(const uchar* buffer, int width, int height);
 
+protected slots:
     void OnTimeout();
+    void NotifyResizeToCEF();
 
 private:
     CefRefPtr<QtCefClient> client_;
@@ -53,8 +55,10 @@ private:
     uchar* front_frame_buffer_ = nullptr;
     int width_ = 0;
     int height_ = 0;
+    bool need_recreate_texture_ = false;
     QMutex mt_;
     QTimer* timer_ = nullptr;
+    QTimer* debounce_timer_ = nullptr;
 
     QOpenGLShaderProgram shader_;
     QOpenGLBuffer vbo_;
