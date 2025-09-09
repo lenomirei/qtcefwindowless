@@ -1,5 +1,8 @@
 #ifndef QTCEFCLIENT_H
 #define QTCEFCLIENT_H
+
+#include "include/cef_task.h"
+#include "include/cef_thread.h"
 #include "include/cef_client.h"
 #include "include/cef_render_handler.h"
 #include <QSharedPointer>

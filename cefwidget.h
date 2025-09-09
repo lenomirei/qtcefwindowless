@@ -1,11 +1,17 @@
 #ifndef CEFWIDGET_H
 #define CEFWIDGET_H
 
-#include <QWidget>
+#include <QOpenGLFunctions>
+#include <QOpenGLTexture>
+#include <QOpenGLWidget>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLBuffer>
+#include <QOpenGLVertexArrayObject>
 #include <QMutex>
+#include <QTimer>
 #include "qtcefclient.h"
 
-class CefWidget : public QWidget, public QtCefClient::Delegate
+class CefWidget : public QOpenGLWidget, public QOpenGLFunctions, public QtCefClient::Delegate
 {
     Q_OBJECT
 public:
@@ -20,7 +26,10 @@ protected:
     void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
     void GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) override;
 
-    void paintEvent(QPaintEvent *event) override;
+    void initializeGL() override;
+    void paintGL() override;
+    void resizeGL(int w, int h) override;
+    //void paintEvent(QPaintEvent *event) override;
     void showEvent(QShowEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -30,13 +39,30 @@ protected:
     void keyReleaseEvent(QKeyEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
-    void resizeEvent(QResizeEvent* event) override;
+    //void resizeEvent(QResizeEvent* event) override;
+
+    void UpdateFrame(const uchar* buffer, int width, int height);
+
+protected slots:
+    void OnTimeout();
+    void NotifyResizeToCEF();
 
 private:
-    QPixmap pixmap_;
     CefRefPtr<QtCefClient> client_;
     float ratio_ = 1.0f;
+    QOpenGLTexture* texture_;
+    uchar* frame_buffer_ = nullptr;
+    uchar* front_frame_buffer_ = nullptr;
+    int width_ = 0;
+    int height_ = 0;
+    bool need_recreate_texture_ = false;
+    QMutex mt_;
+    QTimer* timer_ = nullptr;
+    QTimer* debounce_timer_ = nullptr;
 
+    QOpenGLShaderProgram shader_;
+    QOpenGLBuffer vbo_;
+    QOpenGLVertexArrayObject vao_;
 };
 
 #endif // CEFWIDGET_H
