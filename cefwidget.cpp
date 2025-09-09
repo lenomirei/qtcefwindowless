@@ -63,15 +63,15 @@ void CefWidget::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintEl
 
         width_ = width;
         height_ = height;
+
+        if (!timer_->isActive()) {
+            QMetaObject::invokeMethod(this, [this]() {
+                timer_->start();
+                });
+        }
     }
     memcpy(frame_buffer_, buffer, width * height * 4);
     mt_.unlock();
-
-    if (!timer_->isActive()) {
-        QMetaObject::invokeMethod(this, [this]() {
-            timer_->start();
-        });
-    }
 }
 
 void CefWidget::showEvent(QShowEvent* event)
@@ -311,6 +311,7 @@ void CefWidget::initializeGL() {
 }
 
 void CefWidget::resizeGL(int w, int h) {
+    timer_->stop();
     qInfo() << "w: " << w << " h: " << h;
     glViewport(0, 0, w, h);
 
@@ -373,6 +374,7 @@ void CefWidget::UpdateFrame(const uchar* buffer, int width, int height) {
     }
 
     texture_->bind();
+
     texture_->setData(QOpenGLTexture::QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, buffer);
 
     texture_->release();
@@ -385,6 +387,11 @@ void CefWidget::OnTimeout() {
         return;
     }
     memcpy(front_frame_buffer_, frame_buffer_, width_ * height_ * 4);
+
+    //static int frame_count = 0;
+    //QImage img(front_frame_buffer_, width_, height_, QImage::Format_ARGB32);
+    //img.save(QString("testpng/testpng_%1.png").arg(frame_count), "PNG");
+    //frame_count++;
     mt_.unlock();
 
     update();
