@@ -242,9 +242,19 @@ void CefWidget::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& scre
     screen_info.device_scale_factor = ratio_;
 }
 
-void CefWidget::closeEvent(QCloseEvent* event)
+bool CefWidget::Close()
 {
-    event->accept();
+    if (!client_) {
+        close();
+        return true;
+    }
+
+    client_->CloseBrowser();
+    return false;
+}
+
+void CefWidget::closeEvent(QCloseEvent* event) {
+    int leno = 10;
 }
 
 //void CefWidget::resizeEvent(QResizeEvent* event)
@@ -395,4 +405,14 @@ void CefWidget::OnTimeout() {
     mt_.unlock();
 
     update();
+}
+
+void CefWidget::CanClose()
+{
+    if (client_) {
+        client_ = nullptr;
+    }
+    QMetaObject::invokeMethod(this, [this]() {
+        emit browserReadyToClose();
+        });
 }

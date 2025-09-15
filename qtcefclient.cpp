@@ -1,3 +1,12 @@
+/*
+ * @Author: lenomirei lenomirei@163.com
+ * @Date: 2025-06-09 14:43:31
+ * @LastEditors: lenomirei lenomirei@163.com
+ * @LastEditTime: 2025-09-15 14:21:31
+ * @FilePath: \qtcefwindowless\qtcefclient.cpp
+ * @Description: 
+ * 
+ */
 #include "qtcefclient.h"
 
 QtCefClient::QtCefClient(Delegate* delegate) : delegate_(delegate)
@@ -63,6 +72,24 @@ bool QtCefClient::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle 
 
 void QtCefClient::CloseBrowser()
 {
-    delegate_ = nullptr;
-    bool close_result =  browser_->GetHost()->TryCloseBrowser();
+    browser_->GetHost()->CloseBrowser(false);
+}
+
+bool QtCefClient::DoClose(CefRefPtr<CefBrowser> browser)
+{
+    // Allow the close. For windowed browsers this will result in the OS close event being sent.
+    return false;
+}
+
+void QtCefClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
+{
+    if (browser_ && browser_->IsSame(browser))
+    {
+        browser_ = nullptr;
+    }
+
+    if (delegate_) {
+        delegate_->CanClose();
+        delegate_ = nullptr;
+    }
 }
