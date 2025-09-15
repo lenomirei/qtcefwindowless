@@ -19,12 +19,14 @@ public:
     virtual ~CefWidget();
 
     void CreateBrowser();
+    bool Close();
 
 protected:
     void OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) override;
     bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info) override;
     void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
     void GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) override;
+    void CanClose() override;
 
     void initializeGL() override;
     void paintGL() override;
@@ -42,6 +44,9 @@ protected:
     //void resizeEvent(QResizeEvent* event) override;
 
     void UpdateFrame(const uchar* buffer, int width, int height);
+
+signals:
+    void browserReadyToClose();
 
 protected slots:
     void OnTimeout();

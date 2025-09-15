@@ -17,6 +17,7 @@ public:
         virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) = 0;
         virtual bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info) = 0;
         virtual void GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) = 0;
+        virtual void CanClose() = 0;
     };
     QtCefClient(Delegate* delegate);
 
@@ -24,17 +25,23 @@ public:
     void CloseBrowser();
 
 protected:
+    // override from CefClient
     CefRefPtr<CefRenderHandler> GetRenderHandler() override;
     CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
     CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
 
+    // override from CefRenderHandler
     void OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) override;
     void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
     bool GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) override;
 
-    void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
-
+    // override from CefDisplayHandler
     bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info) override;
+
+    // override from CefLifeSpanHandler
+    bool DoClose(CefRefPtr<CefBrowser> browser) override;
+    void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
+    void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
 private:
     Delegate* delegate_ = nullptr;

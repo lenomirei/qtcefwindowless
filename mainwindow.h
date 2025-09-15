@@ -18,9 +18,14 @@ public:
     ~MainWindow();
 protected:
     void showEvent(QShowEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
+
+protected slots:
+    void ReallyClose();
 
 private:
     Ui::MainWindow *ui;
     CefWidget* cef_widget_ = nullptr;
+    bool can_close_ = false;
 };
 #endif // MAINWINDOW_H
