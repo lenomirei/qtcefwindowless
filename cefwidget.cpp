@@ -11,9 +11,9 @@
 #include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 
-CefWidget::CefWidget(QWidget *parent)
+CefWidget::CefWidget(QWidget* parent)
     : QOpenGLWidget(parent),
-      texture_(nullptr)
+    texture_(nullptr)
 {
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
@@ -101,8 +101,12 @@ void CefWidget::mouseMoveEvent(QMouseEvent* event)
     mouse_event.x = point.x();
     mouse_event.y = point.y();
     mouse_event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
-    if (client_ && client_->GetBrowser() && client_->GetBrowser()->GetHost())
-        client_->GetBrowser()->GetHost()->SendMouseMoveEvent(mouse_event, false);
+    CefPostTask(CefThreadId::TID_UI, base::BindOnce(
+        [](CefRefPtr<QtCefClient> client, CefMouseEvent mouse_event) {
+            if (client && client->GetBrowser() && client->GetBrowser()->GetHost())
+                client->GetBrowser()->GetHost()->SendMouseMoveEvent(mouse_event, false);
+        },
+        client_, mouse_event));
 }
 
 void CefWidget::mouseReleaseEvent(QMouseEvent* event)
@@ -118,8 +122,12 @@ void CefWidget::mouseReleaseEvent(QMouseEvent* event)
     }
 
     CefBrowserHost::MouseButtonType type = event->button() == Qt::LeftButton ? CefBrowserHost::MouseButtonType::MBT_LEFT : CefBrowserHost::MouseButtonType::MBT_RIGHT;
-    if (client_ && client_->GetBrowser())
-        client_->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, true, 1);
+    CefPostTask(CefThreadId::TID_UI, base::BindOnce(
+        [](CefRefPtr<QtCefClient> client, CefMouseEvent mouse_event, CefBrowserHost::MouseButtonType type) {
+            if (client && client->GetBrowser() && client->GetBrowser()->GetHost())
+                client->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, true, 1);
+        },
+        client_, mouse_event, type));
 }
 
 void CefWidget::mousePressEvent(QMouseEvent* event)
@@ -129,21 +137,25 @@ void CefWidget::mousePressEvent(QMouseEvent* event)
     mouse_event.x = point.x();
     mouse_event.y = point.y();
     CefBrowserHost::MouseButtonType type = event->button() == Qt::LeftButton ? CefBrowserHost::MouseButtonType::MBT_LEFT : CefBrowserHost::MouseButtonType::MBT_RIGHT;
-    if (client_ && client_->GetBrowser())
-        client_->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, false, 1);
+    CefPostTask(CefThreadId::TID_UI, base::BindOnce(
+        [](CefRefPtr<QtCefClient> client, CefMouseEvent mouse_event, CefBrowserHost::MouseButtonType type) {
+            if (client && client->GetBrowser() && client->GetBrowser()->GetHost())
+                client->GetBrowser()->GetHost()->SendMouseClickEvent(mouse_event, type, false, 1);
+        },
+        client_, mouse_event, type));
 }
 
 void CefWidget::CreateBrowser()
 {
-    CefWindowInfo window_info;
-    HWND hwnd = (HWND)winId();
-    window_info.parent_window = hwnd;
-    window_info.windowless_rendering_enabled = 1;
-
     CefBrowserSettings browser_settings;
     browser_settings.windowless_frame_rate = 30;
     client_ = new QtCefClient(this);
-    CefBrowserHost::CreateBrowser(window_info, client_, "https://www.baidu.com", browser_settings, nullptr, nullptr);
+    CefPostTask(CefThreadId::TID_UI, base::BindOnce([](CefRefPtr<QtCefClient> client, CefBrowserSettings browser_settings) {
+        CefWindowInfo window_info;
+        window_info.windowless_rendering_enabled = 1;
+        CefBrowserHost::CreateBrowser(window_info, client, "https://www.baidu.com", browser_settings, nullptr, nullptr);
+        },
+        client_, browser_settings));
 }
 
 void MyFunc(int arg) {
@@ -179,17 +191,17 @@ void CefWidget::keyPressEvent(QKeyEvent* event)
 
 void CefWidget::keyReleaseEvent(QKeyEvent* event)
 {
-   CefKeyEvent key_event;
-   key_event.type = KEYEVENT_KEYUP;
-   key_event.windows_key_code = event->nativeVirtualKey();
-   key_event.native_key_code = event->nativeScanCode();
+    CefKeyEvent key_event;
+    key_event.type = KEYEVENT_KEYUP;
+    key_event.windows_key_code = event->nativeVirtualKey();
+    key_event.native_key_code = event->nativeScanCode();
 
 
-   CefPostTask(CefThreadId::TID_UI, base::BindOnce(
-       [](CefRefPtr<QtCefClient> client, CefKeyEvent key_event) {
-           if (client && client->GetBrowser() && client->GetBrowser()->GetHost())
-               client->GetBrowser()->GetHost()->SendKeyEvent(key_event);
-       }, client_, key_event));
+    CefPostTask(CefThreadId::TID_UI, base::BindOnce(
+        [](CefRefPtr<QtCefClient> client, CefKeyEvent key_event) {
+            if (client && client->GetBrowser() && client->GetBrowser()->GetHost())
+                client->GetBrowser()->GetHost()->SendKeyEvent(key_event);
+        }, client_, key_event));
 }
 
 void CefWidget::wheelEvent(QWheelEvent* event)
@@ -207,7 +219,7 @@ void CefWidget::wheelEvent(QWheelEvent* event)
                 client->GetBrowser()->GetHost()->SendMouseWheelEvent(mouse_event, delta_x, delta_y);
         },
         client_, mouse_event, delta_x, delta_y));
-    
+
 }
 
 bool CefWidget::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info)
@@ -227,7 +239,7 @@ bool CefWidget::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cu
         break;
     }
 
-    QMetaObject::invokeMethod(this, [this, shape](){
+    QMetaObject::invokeMethod(this, [this, shape]() {
         setCursor(shape);
     });
 
@@ -237,9 +249,11 @@ bool CefWidget::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cu
 void CefWidget::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info)
 {
     QWindow* window = windowHandle();
-    QScreen* screen = window->screen();
-    ratio_ = screen->devicePixelRatio();
-    screen_info.device_scale_factor = ratio_;
+    if (window != nullptr) {
+        QScreen* screen = window->screen();
+        ratio_ = screen->devicePixelRatio();
+        screen_info.device_scale_factor = ratio_;
+    }
 }
 
 bool CefWidget::Close()
@@ -333,10 +347,13 @@ void CefWidget::resizeGL(int w, int h) {
 }
 
 void CefWidget::NotifyResizeToCEF() {
-    if (client_ && client_->GetBrowser())
-    {
-        client_->GetBrowser()->GetHost()->WasResized();
-    }
+    CefPostTask(CefThreadId::TID_UI, base::BindOnce([](CefRefPtr<QtCefClient> client) {
+        if (client && client->GetBrowser())
+        {
+            client->GetBrowser()->GetHost()->WasResized();
+        }
+        }, client_));
+
 }
 
 void CefWidget::paintGL() {
