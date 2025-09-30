@@ -9,6 +9,10 @@
  */
 #include "qtcefclient.h"
 
+#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
+#include "include/wrapper/cef_closure_task.h"
+
 QtCefClient::QtCefClient(Delegate* delegate) : delegate_(delegate)
 {
 
@@ -72,6 +76,11 @@ bool QtCefClient::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle 
 
 void QtCefClient::CloseBrowser()
 {
+    if (!CefCurrentlyOn(CefThreadId::TID_UI)) {
+        CefPostTask(CefThreadId::TID_UI, base::BindOnce(&QtCefClient::CloseBrowser, this));
+        return;
+    }
+    
     browser_->GetHost()->CloseBrowser(false);
 }
 
