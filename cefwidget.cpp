@@ -8,8 +8,8 @@
 #include <QWheelEvent>
 #include <QWindow>
 
-#include "include/base/cef_callback.h"
-#include "include/wrapper/cef_closure_task.h"
+#include "base/cef_callback.h"
+#include "wrapper/cef_closure_task.h"
 
 CefWidget::CefWidget(QWidget* parent)
     : QOpenGLWidget(parent),

@@ -9,7 +9,7 @@
  */
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
-#include "include/cef_browser.h"
+#include <cef_browser.h>
 #include "qtcefclient.h"
 #include "cefwidget.h"
 

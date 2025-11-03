@@ -2,11 +2,10 @@
 
 #include "qtcefapp.h"
 #include <QApplication>
-#include <libloaderapi.h>
+
 
 int main(int argc, char *argv[])
 {
-    CefEnableHighDPISupport();
     CefMainArgs main_args(GetModuleHandle(0));
     int exit_code = CefExecuteProcess(main_args, nullptr, nullptr);
     if (exit_code >= 0) {

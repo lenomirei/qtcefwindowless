@@ -9,9 +9,9 @@
  */
 #include "qtcefclient.h"
 
-#include "include/base/cef_bind.h"
-#include "include/base/cef_callback.h"
-#include "include/wrapper/cef_closure_task.h"
+#include <base/cef_bind.h>
+#include <base/cef_callback.h>
+#include <wrapper/cef_closure_task.h>
 
 QtCefClient::QtCefClient(Delegate* delegate) : delegate_(delegate)
 {

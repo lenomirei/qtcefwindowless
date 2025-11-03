@@ -11,8 +11,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets OpenGL OpenGLWidgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL OpenGLWidgets)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -26,7 +26,7 @@ set(PROJECT_SOURCES
         cefwidget.cpp
         mainwindow.ui
 )
-add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
+add_definitions(-DNOMINMAX)
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(qtcefwindowless
         MANUAL_FINALIZATION
@@ -51,15 +51,25 @@ else()
 endif()
 
 target_include_directories(qtcefwindowless PRIVATE ${PROJECT_SOURCE_DIR}/cef)
+target_include_directories(qtcefwindowless PRIVATE ${PROJECT_SOURCE_DIR}/cef/include)
 target_link_directories(qtcefwindowless PRIVATE ${PROJECT_SOURCE_DIR}/cef/libs)
-target_link_libraries(qtcefwindowless PRIVATE Qt${QT_VERSION_MAJOR}::Widgets libcef_dll_wrapper libcef)
 
-#add_library(libcef SHARED IMPORTED GLOBAL)
-#set_target_properties(libcef PROPERTIES
-#    INTERFACE_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/cef/include"            #PUBLIC头文件目录
-#    IMPORTED_IMPLIB "${PROJECT_SOURCE_DIR}/cef/libs/libcef.lib" #Windows平台上dll库的.lib库所在位置
-#    IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/cef/libs/libcef.dll"  #dll库的.dll所在位置，或者.so库的位置，或者静态库的位置
-#)
+# qt libs
+target_link_libraries(qtcefwindowless PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGL Qt${QT_VERSION_MAJOR}::OpenGLWidgets libcef_dll_wrapper libcef)
+
+# cef
+target_link_libraries(qtcefwindowless PRIVATE $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/cef/libs/Debug/libcef_dll_wrapper.lib> $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/cef/libs/Release/libcef_dll_wrapper.lib>)
+target_link_libraries(qtcefwindowless PRIVATE $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/cef/libs/Debug/libcef.lib> $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/cef/libs/Release/libcef.lib>)
+
+add_custom_command(TARGET qtcefwindowless POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/cef/bin/"
+        "$<TARGET_FILE_DIR:qtcefwindowless>/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/cef/resources/"
+        "$<TARGET_FILE_DIR:qtcefwindowless>/"
+    COMMENT "Copying assets files to output directory"
+)
 
 set_target_properties(qtcefwindowless PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
