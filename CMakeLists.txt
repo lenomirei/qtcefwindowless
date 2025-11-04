@@ -24,7 +24,6 @@ set(PROJECT_SOURCES
         qtcefclient.cpp
         cefwidget.h
         cefwidget.cpp
-        mainwindow.ui
 )
 add_definitions(-DNOMINMAX)
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

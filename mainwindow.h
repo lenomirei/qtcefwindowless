@@ -5,27 +5,26 @@
 
 class CefWidget;
 
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
+class MainWindow : public QMainWindow {
+  Q_OBJECT
 
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
+ public:
+  MainWindow(QWidget* parent = nullptr);
+  ~MainWindow();
 
-public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
-protected:
-    void showEvent(QShowEvent* event) override;
-    void closeEvent(QCloseEvent* event) override;
+ protected:
+  void showEvent(QShowEvent* event) override;
+  void closeEvent(QCloseEvent* event) override;
+  void InitUI();
 
-protected slots:
-    void ReallyClose();
+ protected slots:
+  void ReallyClose();
 
-private:
-    Ui::MainWindow *ui;
-    CefWidget* cef_widget_ = nullptr;
-    bool can_close_ = false;
+ private:
+  QWidget* centralWidget = nullptr;
+  CefWidget* cef_widget_ = nullptr;
+  bool can_close_ = false;
+  QWidget* title_bar_ = nullptr;
+  QWidget* buttons_container_ = nullptr;
 };
-#endif // MAINWINDOW_H
+#endif  // MAINWINDOW_H
