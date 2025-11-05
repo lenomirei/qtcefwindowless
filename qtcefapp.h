@@ -1,7 +1,7 @@
 #ifndef QTCEFAPP_H
 #define QTCEFAPP_H
 
-#include "include/cef_app.h"
+#include <cef_app.h>
 
 
 class QtCefApp : public CefApp

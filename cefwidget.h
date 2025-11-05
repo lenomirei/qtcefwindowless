@@ -20,6 +20,12 @@ public:
 
     void CreateBrowser();
     bool Close();
+    void Refresh();
+    bool CanBack();
+    void Back();
+    bool CanForward();
+    void Forward();
+    void Navigate(const QUrl& url);
 
 protected:
     void OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) override;

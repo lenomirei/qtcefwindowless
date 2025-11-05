@@ -8,8 +8,8 @@
 #include <QWheelEvent>
 #include <QWindow>
 
-#include "include/base/cef_callback.h"
-#include "include/wrapper/cef_closure_task.h"
+#include "base/cef_callback.h"
+#include "wrapper/cef_closure_task.h"
 
 CefWidget::CefWidget(QWidget* parent)
     : QOpenGLWidget(parent),
@@ -432,4 +432,42 @@ void CefWidget::CanClose()
     QMetaObject::invokeMethod(this, [this]() {
         emit browserReadyToClose();
         });
+}
+
+void CefWidget::Refresh() {
+    if (client_ != nullptr && client_->GetBrowser() != nullptr) {
+        client_->GetBrowser()->Reload();
+    }
+}
+
+bool CefWidget::CanBack() {
+    if (client_ != nullptr && client_->GetBrowser() != nullptr) {
+        return client_->GetBrowser()->CanGoBack();
+    }
+    return false;
+}
+
+void CefWidget::Back() {
+    if (client_ != nullptr && client_->GetBrowser() != nullptr) {
+        client_->GetBrowser()->GoBack();
+    }
+}
+
+bool CefWidget::CanForward() {
+    if (client_ != nullptr && client_->GetBrowser() != nullptr) {
+        return client_->GetBrowser()->CanGoForward();
+    }
+    return false;
+}
+
+void CefWidget::Forward() {
+    if (client_ != nullptr && client_->GetBrowser() != nullptr) {
+        client_->GetBrowser()->GoForward();
+    }
+}
+
+void CefWidget::Navigate(const QUrl& url) {
+    if (client_ != nullptr && client_->GetBrowser() != nullptr && client_->GetBrowser()->GetMainFrame() != nullptr) {
+        client_->GetBrowser()->GetMainFrame()->LoadURL(url.toString().toStdString());
+    }
 }
