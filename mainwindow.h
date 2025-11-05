@@ -19,6 +19,10 @@ class MainWindow : public QMainWindow {
 
  protected slots:
   void ReallyClose();
+  void OnBackButtonClicked();
+  void OnForwardButtonClicked();
+  void OnRefreshButtonClicked();
+  void OnAddressBarEnterPressed(const QUrl& url);
 
  private:
   QWidget* centralWidget = nullptr;
