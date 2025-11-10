@@ -1,16 +1,16 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
+#include <QWidget>
 
 class CefWidget;
 
-class MainWindow : public QMainWindow {
+class BrowserWindow : public QWidget {
   Q_OBJECT
 
  public:
-  MainWindow(QWidget* parent = nullptr);
-  ~MainWindow();
+  BrowserWindow(QWidget* parent = nullptr);
+  ~BrowserWindow();
 
  protected:
   void showEvent(QShowEvent* event) override;
@@ -25,7 +25,6 @@ class MainWindow : public QMainWindow {
   void OnAddressBarEnterPressed(const QUrl& url);
 
  private:
-  QWidget* centralWidget = nullptr;
   CefWidget* cef_widget_ = nullptr;
   bool can_close_ = false;
   QWidget* title_bar_ = nullptr;

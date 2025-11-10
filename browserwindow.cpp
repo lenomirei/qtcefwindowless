@@ -7,7 +7,7 @@
  * @Description:
  *
  */
-#include "mainwindow.h"
+#include "browserwindow.h"
 
 #include <cef_browser.h>
 
@@ -19,25 +19,23 @@
 #include "cefwidget.h"
 #include "qtcefclient.h"
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+BrowserWindow::BrowserWindow(QWidget* parent) : QWidget(parent) {
   can_close_ = false;
   InitUI();
 }
 
-MainWindow::~MainWindow() {
+BrowserWindow::~BrowserWindow() {
   cef_widget_->close();
   cef_widget_ = nullptr;
 }
 
-void MainWindow::InitUI() {
-  centralWidget = new QWidget(this);
-  this->setCentralWidget(centralWidget);
-  QVBoxLayout* layout = new QVBoxLayout(centralWidget);
+void BrowserWindow::InitUI() {
+  QVBoxLayout* layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
-  centralWidget->setLayout(layout);
+  setLayout(layout);
 
-  title_bar_ = new QWidget(centralWidget);
+  title_bar_ = new QWidget(this);
   layout->addWidget(title_bar_);
   title_bar_->setFixedHeight(50);
 
@@ -54,34 +52,34 @@ void MainWindow::InitUI() {
   QPushButton* back_button_ = new QPushButton(buttons_container_);
   buttons_layout->addWidget(back_button_);
   back_button_->setText("Back");
-  connect(back_button_, &QPushButton::clicked, this, &MainWindow::OnBackButtonClicked);
+  connect(back_button_, &QPushButton::clicked, this, &BrowserWindow::OnBackButtonClicked);
   QPushButton* forward_button_ = new QPushButton(buttons_container_);
   buttons_layout->addWidget(forward_button_);
   forward_button_->setText("Forward");
-  connect(forward_button_, &QPushButton::clicked, this, &MainWindow::OnForwardButtonClicked);
+  connect(forward_button_, &QPushButton::clicked, this, &BrowserWindow::OnForwardButtonClicked);
   QPushButton* refresh_button_ = new QPushButton(buttons_container_);
   buttons_layout->addWidget(refresh_button_);
   refresh_button_->setText("Refresh");
-  connect(refresh_button_, &QPushButton::clicked, this, &MainWindow::OnRefreshButtonClicked);
+  connect(refresh_button_, &QPushButton::clicked, this, &BrowserWindow::OnRefreshButtonClicked);
 
   AddressBar* addressbar = new AddressBar(buttons_container_);
   buttons_layout->addWidget(addressbar);
-  connect(addressbar, &AddressBar::navigateToUrl, this, &MainWindow::OnAddressBarEnterPressed);
+  connect(addressbar, &AddressBar::navigateToUrl, this, &BrowserWindow::OnAddressBarEnterPressed);
 
   buttons_container_->setMinimumWidth(buttons_container_->sizeHint().width());
 
-  cef_widget_ = new CefWidget(centralWidget);
+  cef_widget_ = new CefWidget(this);
   connect(cef_widget_, &CefWidget::browserReadyToClose, this,
-          &MainWindow::ReallyClose);
+          &BrowserWindow::ReallyClose);
   layout->addWidget(cef_widget_);
   cef_widget_->show();
 }
 
-void MainWindow::showEvent(QShowEvent* event) {
+void BrowserWindow::showEvent(QShowEvent* event) {
   setMinimumSize(QSize(500, 500));
 }
 
-void MainWindow::closeEvent(QCloseEvent* event) {
+void BrowserWindow::closeEvent(QCloseEvent* event) {
   if (can_close_) {
     event->accept();
   } else {
@@ -90,30 +88,30 @@ void MainWindow::closeEvent(QCloseEvent* event) {
   }
 }
 
-void MainWindow::ReallyClose() {
+void BrowserWindow::ReallyClose() {
   can_close_ = true;
   close();
 }
 
-void MainWindow::OnBackButtonClicked() {
+void BrowserWindow::OnBackButtonClicked() {
   if (cef_widget_) {
     cef_widget_->Back();
   }
 }
 
-void MainWindow::OnForwardButtonClicked() {
+void BrowserWindow::OnForwardButtonClicked() {
   if (cef_widget_) {
     cef_widget_->Forward();
   }
 }
 
-void MainWindow::OnRefreshButtonClicked() {
+void BrowserWindow::OnRefreshButtonClicked() {
   if (cef_widget_) {
     cef_widget_->Refresh();
   }
 }
 
-void MainWindow::OnAddressBarEnterPressed(const QUrl& url) {
+void BrowserWindow::OnAddressBarEnterPressed(const QUrl& url) {
   if (cef_widget_) {
     cef_widget_->Navigate(url);
   }

@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "browserwindow.h"
 
 #include "qtcefapp.h"
 #include <QApplication>
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     CefInitialize(main_args, settings, app.get(), nullptr);
 
     QApplication a(argc, argv);
-    MainWindow w;
+    BrowserWindow w;
     w.show();
     auto res = a.exec();
     CefShutdown();

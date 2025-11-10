@@ -16,8 +16,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL OpenGLWidg
 
 set(PROJECT_SOURCES
         main.cpp
-        mainwindow.cpp
-        mainwindow.h
+        browserwindow.cpp
+        browserwindow.h
         qtcefapp.h
         qtcefapp.cpp
         qtcefclient.h
