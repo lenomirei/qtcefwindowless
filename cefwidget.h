@@ -10,65 +10,55 @@
 #include <QOpenGLWidget>
 #include <QTimer>
 
-#include "qtcefclient.h"
+#include "cef/include/cef_browser.h"
+#include <cef_render_handler.h>
 
 class CefWidget : public QOpenGLWidget,
-                  public QOpenGLFunctions,
-                  public QtCefClient::Delegate {
+                  public QOpenGLFunctions {
   Q_OBJECT
  public:
   CefWidget(QWidget* parent = nullptr);
   virtual ~CefWidget();
 
-  void CreateBrowser();
-  bool Close();
-  void Refresh();
-  bool CanBack();
-  void Back();
-  bool CanForward();
-  void Forward();
-  void Navigate(const QUrl& url);
 
- protected:
   void OnPaint(CefRefPtr<CefBrowser> browser,
                CefRenderHandler::PaintElementType type,
                const CefRenderHandler::RectList& dirtyRects, const void* buffer,
-               int width, int height) override;
-  bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,
+               int width, int height);
+  void OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,
                       cef_cursor_type_t type,
-                      const CefCursorInfo& custom_cursor_info) override;
-  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
-  void GetScreenInfo(CefRefPtr<CefBrowser> browser,
-                     CefScreenInfo& screen_info) override;
-  void CanClose() override;
+                      const CefCursorInfo& custom_cursor_info);
 
+ protected:
   void initializeGL() override;
   void paintGL() override;
   void resizeGL(int w, int h) override;
-  // void paintEvent(QPaintEvent *event) override;
-  void showEvent(QShowEvent* event) override;
-  void mouseDoubleClickEvent(QMouseEvent* event) override;
+  void showEvent(QShowEvent *event) override;
   void mouseMoveEvent(QMouseEvent* event) override;
   void mousePressEvent(QMouseEvent* event) override;
   void mouseReleaseEvent(QMouseEvent* event) override;
   void keyPressEvent(QKeyEvent* event) override;
   void keyReleaseEvent(QKeyEvent* event) override;
   void wheelEvent(QWheelEvent* event) override;
-  void closeEvent(QCloseEvent* event) override;
-  // void resizeEvent(QResizeEvent* event) override;
 
   void UpdateFrame(const uchar* buffer, int width, int height);
 
  signals:
   void browserReadyToClose();
+  void cefWidgetShow();
+  void cefWidgetMouseMove(QMouseEvent* event);
+  void cefWidgetmousePress(QMouseEvent* event);
+  void cefWidgetRelease(QMouseEvent* event);
+  void cefWidgetKeyPress(QKeyEvent* event);
+  void cefWidgetKeyRelease(QKeyEvent* event);
+  void cefWidgetWheel(QWheelEvent* event);
+  void cefWidgetSizeChanged(void);
 
  protected slots:
   void OnTimeout();
   void NotifyResizeToCEF();
 
  private:
-  CefRefPtr<QtCefClient> client_;
-  float ratio_ = 1.0f;
   QOpenGLTexture* texture_;
   uchar* frame_buffer_ = nullptr;
   uchar* front_frame_buffer_ = nullptr;

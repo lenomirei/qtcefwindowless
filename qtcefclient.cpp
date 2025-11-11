@@ -57,13 +57,8 @@ bool QtCefClient::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& sc
 
 void QtCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
-    if (!browser->IsPopup())
-        browser_ = browser;
-}
-
-CefRefPtr<CefBrowser> QtCefClient::GetBrowser()
-{
-    return browser_;
+    if (delegate_)
+        delegate_->OnAfterCreated(browser);
 }
 
 bool QtCefClient::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info)
@@ -74,16 +69,6 @@ bool QtCefClient::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle 
         return false;
 }
 
-void QtCefClient::CloseBrowser()
-{
-    if (!CefCurrentlyOn(CefThreadId::TID_UI)) {
-        CefPostTask(CefThreadId::TID_UI, base::BindOnce(&QtCefClient::CloseBrowser, this));
-        return;
-    }
-    
-    browser_->GetHost()->CloseBrowser(false);
-}
-
 bool QtCefClient::DoClose(CefRefPtr<CefBrowser> browser)
 {
     // Allow the close. For windowed browsers this will result in the OS close event being sent.
@@ -92,13 +77,7 @@ bool QtCefClient::DoClose(CefRefPtr<CefBrowser> browser)
 
 void QtCefClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
-    if (browser_ && browser_->IsSame(browser))
-    {
-        browser_ = nullptr;
-    }
-
     if (delegate_) {
-        delegate_->CanClose();
-        delegate_ = nullptr;
+        delegate_->OnBeforeClose(browser);
     }
 }
