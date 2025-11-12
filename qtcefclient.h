@@ -17,12 +17,10 @@ public:
         virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) = 0;
         virtual bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info) = 0;
         virtual void GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) = 0;
-        virtual void CanClose() = 0;
+        virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) = 0;
+        virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) = 0;
     };
     QtCefClient(Delegate* delegate);
-
-    CefRefPtr<CefBrowser> GetBrowser();
-    void CloseBrowser();
 
 protected:
     // override from CefClient
@@ -45,7 +43,6 @@ protected:
 
 private:
     Delegate* delegate_ = nullptr;
-    CefRefPtr<CefBrowser> browser_;
 
 private:
     IMPLEMENT_REFCOUNTING(QtCefClient);
