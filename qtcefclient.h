@@ -29,6 +29,7 @@ class QtCefClient : public CefClient,
                                CefScreenInfo& screen_info) = 0;
     virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) = 0;
     virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) = 0;
+    virtual void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefLoadHandler::TransitionType type) = 0;
     virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame, int http_status_code) = 0;
     virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
@@ -45,7 +46,7 @@ class QtCefClient : public CefClient,
   CefRefPtr<CefLoadHandler> GetLoadHandler() override;
 
   // override from CefRenderHandler
-  void OnPaint(CefRefPtr<CefBrowser> browser,
+  virtual void OnPaint(CefRefPtr<CefBrowser> browser,
                CefRenderHandler::PaintElementType type,
                const CefRenderHandler::RectList& dirtyRects, const void* buffer,
                int width, int height) override;
@@ -64,6 +65,7 @@ class QtCefClient : public CefClient,
   virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
   // override from CefLoadHandler
+  virtual void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefLoadHandler::TransitionType type);
   virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                  int http_status_code) override;
 
