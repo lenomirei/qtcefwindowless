@@ -27,23 +27,27 @@ class BrowserWindow : public QWidget, public QtCefClient::Delegate {
   // Delegate
   // override from CefRenderHandler
   virtual void OnPaint(CefRefPtr<CefBrowser> browser,
-               CefRenderHandler::PaintElementType type,
-               const CefRenderHandler::RectList& dirtyRects, const void* buffer,
-               int width, int height) override;
-  virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
+                       CefRenderHandler::PaintElementType type,
+                       const CefRenderHandler::RectList& dirtyRects,
+                       const void* buffer, int width, int height) override;
+  virtual void GetViewRect(CefRefPtr<CefBrowser> browser,
+                           CefRect& rect) override;
   virtual void GetScreenInfo(CefRefPtr<CefBrowser> browser,
-                     CefScreenInfo& screen_info) override;
+                             CefScreenInfo& screen_info) override;
 
   // override from CefDisplayHandler
-  virtual bool OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor,
-                      cef_cursor_type_t type,
-                      const CefCursorInfo& custom_cursor_info) override;
+  virtual bool OnCursorChange(CefRefPtr<CefBrowser> browser,
+                              CefCursorHandle cursor, cef_cursor_type_t type,
+                              const CefCursorInfo& custom_cursor_info) override;
 
   // override from CefLifeSpanHandler
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
   // override from CefLoadHandler
+  virtual void OnLoadStart(CefRefPtr<CefBrowser> browser,
+                           CefRefPtr<CefFrame> frame,
+                           CefLoadHandler::TransitionType type) override;
   virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
                          CefRefPtr<CefFrame> frame,
                          int http_status_code) override;

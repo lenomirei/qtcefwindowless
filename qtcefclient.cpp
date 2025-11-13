@@ -2,7 +2,7 @@
  * @Author: lenomirei lenomirei@163.com
  * @Date: 2025-06-09 14:43:31
  * @LastEditors: lenomirei lenomirei@163.com
- * @LastEditTime: 2025-09-15 14:21:31
+ * @LastEditTime: 2025-11-13 14:07:56
  * @FilePath: \qtcefwindowless\qtcefclient.cpp
  * @Description:
  *
@@ -69,6 +69,13 @@ void QtCefClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   }
 }
 
+void QtCefClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
+                              CefRefPtr<CefFrame> frame, CefLoadHandler::TransitionType type) {
+  if (delegate_) {
+    delegate_->OnLoadStart(browser, frame, type);
+  }
+}
+
 void QtCefClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                             CefRefPtr<CefFrame> frame, int http_status_code) {
   if (delegate_) {
@@ -77,9 +84,10 @@ void QtCefClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
 }
 
 void QtCefClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
-                                            bool is_loading, bool can_goback,
-                                            bool can_goforward) {
+                                       bool is_loading, bool can_goback,
+                                       bool can_goforward) {
   if (delegate_) {
-    delegate_->OnLoadingStateChange(browser, is_loading, can_goback, can_goforward);
+    delegate_->OnLoadingStateChange(browser, is_loading, can_goback,
+                                    can_goforward);
   }
 }
