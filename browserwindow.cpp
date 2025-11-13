@@ -1,11 +1,10 @@
 /*
  * @Author: lenomirei lenomirei@163.com
- * @Date: 2025-06-09 14:43:31
+ * @Date: 2025-11-12 10:53:19
  * @LastEditors: lenomirei lenomirei@163.com
- * @LastEditTime: 2025-11-05 12:10:05
- * @FilePath: \qtcefwindowless\mainwindow.cpp
- * @Description:
- *
+ * @LastEditTime: 2025-11-13 12:23:50
+ * @FilePath: \qtcefwindowless\browserwindow.cpp
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "browserwindow.h"
 
@@ -14,6 +13,7 @@
 #include <QCloseEvent>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QScreen>
 #include <QWindow>
 
 #include "addressbar.h"
@@ -21,6 +21,7 @@
 #include "cef/include/wrapper/cef_closure_task.h"
 #include "cefwidget.h"
 #include "qtcefclient.h"
+#include "titlebar.h"
 
 BrowserWindow::BrowserWindow(QWidget* parent) : QWidget(parent) {
   client_ = new QtCefClient(this);
@@ -38,42 +39,14 @@ void BrowserWindow::InitUI() {
   layout->setSpacing(0);
   setLayout(layout);
 
-  title_bar_ = new QWidget(this);
+  title_bar_ = new TitleBar(this);
   layout->addWidget(title_bar_);
   title_bar_->setFixedHeight(50);
 
-  QHBoxLayout* titlebarlayout = new QHBoxLayout(title_bar_);
-  title_bar_->setLayout(titlebarlayout);
-  buttons_container_ = new QWidget(title_bar_);
-  titlebarlayout->addWidget(buttons_container_);
-
-  QHBoxLayout* buttons_layout = new QHBoxLayout(buttons_container_);
-  buttons_layout->setSpacing(5);
-  buttons_layout->setContentsMargins(0, 0, 10, 0);
-  buttons_container_->setLayout(buttons_layout);
-
-  QPushButton* back_button_ = new QPushButton(buttons_container_);
-  buttons_layout->addWidget(back_button_);
-  back_button_->setText("Back");
-  connect(back_button_, &QPushButton::clicked, this,
-          &BrowserWindow::OnBackButtonClicked);
-  QPushButton* forward_button_ = new QPushButton(buttons_container_);
-  buttons_layout->addWidget(forward_button_);
-  forward_button_->setText("Forward");
-  connect(forward_button_, &QPushButton::clicked, this,
-          &BrowserWindow::OnForwardButtonClicked);
-  QPushButton* refresh_button_ = new QPushButton(buttons_container_);
-  buttons_layout->addWidget(refresh_button_);
-  refresh_button_->setText("Refresh");
-  connect(refresh_button_, &QPushButton::clicked, this,
-          &BrowserWindow::OnRefreshButtonClicked);
-
-  AddressBar* addressbar = new AddressBar(buttons_container_);
-  buttons_layout->addWidget(addressbar);
-  connect(addressbar, &AddressBar::navigateToUrl, this,
-          &BrowserWindow::OnAddressBarEnterPressed);
-
-  buttons_container_->setMinimumWidth(buttons_container_->sizeHint().width());
+  connect(title_bar_, &TitleBar::backButtonClicked, this, &BrowserWindow::OnBackButtonClicked);
+  connect(title_bar_, &TitleBar::forwardButtonClicked, this, &BrowserWindow::OnForwardButtonClicked);
+  connect(title_bar_, &TitleBar::reloadButtonClicked, this, &BrowserWindow::OnReloadButtonClicked);
+  connect(title_bar_, &TitleBar::addressBarEnterPressed, this, &BrowserWindow::OnAddressBarEnterPressed);
 
   cef_widget_ = new CefWidget(this);
   connect(cef_widget_, &CefWidget::browserReadyToClose, this,
@@ -148,7 +121,7 @@ void BrowserWindow::OnForwardButtonClicked() {
   }
 }
 
-void BrowserWindow::OnRefreshButtonClicked() {
+void BrowserWindow::OnReloadButtonClicked() {
   if (current_browser_) {
     current_browser_->Reload();
   }
@@ -404,4 +377,35 @@ void BrowserWindow::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
     QMetaObject::invokeMethod(this, [this]() { close(); });
   }
   mt_.unlock();
+}
+
+void BrowserWindow::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int http_status_code) {
+  if (!current_browser_->IsSame(browser)) {
+    if (frame->IsMain()) {
+      // TODO(lenomirei): Update tab label
+    }
+    return;
+  } else {
+    if (frame->IsMain()) {
+      std::string url = frame->GetURL();
+      QMetaObject::invokeMethod(this, [this, url]() {
+        title_bar_->UpdateAddressBarText(QString::fromStdString(url));
+      });
+    }
+    
+  }
+}
+
+void BrowserWindow::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                            bool is_loading, bool can_goback,
+                                            bool can_goforward) {
+  if (!current_browser_->IsSame(browser)) {
+    return;
+  } else {
+      QMetaObject::invokeMethod(this, [this, is_loading, can_goback, can_goforward]() {
+        title_bar_->SetBackButtonDisabled(!can_goback);
+        title_bar_->SetForwardButtonDisabled(!can_goforward);
+        title_bar_->SetReloadButtonLoading(is_loading);
+      });
+  }
 }

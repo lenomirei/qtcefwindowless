@@ -4,8 +4,8 @@
  * @LastEditors: lenomirei lenomirei@163.com
  * @LastEditTime: 2025-09-15 14:21:31
  * @FilePath: \qtcefwindowless\qtcefclient.cpp
- * @Description: 
- * 
+ * @Description:
+ *
  */
 #include "qtcefclient.h"
 
@@ -13,71 +13,73 @@
 #include <base/cef_callback.h>
 #include <wrapper/cef_closure_task.h>
 
-QtCefClient::QtCefClient(Delegate* delegate) : delegate_(delegate)
-{
+QtCefClient::QtCefClient(Delegate* delegate) : delegate_(delegate) {}
 
+CefRefPtr<CefRenderHandler> QtCefClient::GetRenderHandler() { return this; }
+
+CefRefPtr<CefLifeSpanHandler> QtCefClient::GetLifeSpanHandler() { return this; }
+
+CefRefPtr<CefDisplayHandler> QtCefClient::GetDisplayHandler() { return this; }
+
+CefRefPtr<CefLoadHandler> QtCefClient::GetLoadHandler() { return this; }
+
+void QtCefClient::OnPaint(CefRefPtr<CefBrowser> browser,
+                          CefRenderHandler::PaintElementType type,
+                          const CefRenderHandler::RectList& dirtyRects,
+                          const void* buffer, int width, int height) {
+  if (delegate_)
+    delegate_->OnPaint(browser, type, dirtyRects, buffer, width, height);
 }
 
-CefRefPtr<CefRenderHandler> QtCefClient::GetRenderHandler()
-{
-    return this;
+void QtCefClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) {
+  if (delegate_) delegate_->GetViewRect(browser, rect);
 }
 
-CefRefPtr<CefLifeSpanHandler> QtCefClient::GetLifeSpanHandler()
-{
-    return this;
+bool QtCefClient::GetScreenInfo(CefRefPtr<CefBrowser> browser,
+                                CefScreenInfo& screen_info) {
+  if (delegate_) {
+    delegate_->GetScreenInfo(browser, screen_info);
+    return true;
+  }
+  return false;
 }
 
-CefRefPtr<CefDisplayHandler> QtCefClient::GetDisplayHandler()
-{
-    return this;
+void QtCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
+  if (delegate_) delegate_->OnAfterCreated(browser);
 }
 
-void QtCefClient::OnPaint( CefRefPtr< CefBrowser > browser, CefRenderHandler::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
-{
-    if (delegate_)
-        delegate_->OnPaint(browser, type, dirtyRects, buffer, width, height);
-}
-
-void QtCefClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
-{
-    if (delegate_)
-        delegate_->GetViewRect(browser, rect);
-}
-
-bool QtCefClient::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info)
-{
-    if (delegate_)
-    {
-        delegate_->GetScreenInfo(browser, screen_info);
-        return true;
-    }
+bool QtCefClient::OnCursorChange(CefRefPtr<CefBrowser> browser,
+                                 CefCursorHandle cursor, cef_cursor_type_t type,
+                                 const CefCursorInfo& custom_cursor_info) {
+  if (delegate_)
+    return delegate_->OnCursorChange(browser, cursor, type, custom_cursor_info);
+  else
     return false;
 }
 
-void QtCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
-{
-    if (delegate_)
-        delegate_->OnAfterCreated(browser);
+bool QtCefClient::DoClose(CefRefPtr<CefBrowser> browser) {
+  // Allow the close. For windowed browsers this will result in the OS close
+  // event being sent.
+  return false;
 }
 
-bool QtCefClient::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info)
-{
-    if (delegate_)
-        return delegate_->OnCursorChange(browser, cursor, type, custom_cursor_info);
-    else
-        return false;
+void QtCefClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+  if (delegate_) {
+    delegate_->OnBeforeClose(browser);
+  }
 }
 
-bool QtCefClient::DoClose(CefRefPtr<CefBrowser> browser)
-{
-    // Allow the close. For windowed browsers this will result in the OS close event being sent.
-    return false;
+void QtCefClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                            CefRefPtr<CefFrame> frame, int http_status_code) {
+  if (delegate_) {
+    delegate_->OnLoadEnd(browser, frame, http_status_code);
+  }
 }
 
-void QtCefClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
-{
-    if (delegate_) {
-        delegate_->OnBeforeClose(browser);
-    }
+void QtCefClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                            bool is_loading, bool can_goback,
+                                            bool can_goforward) {
+  if (delegate_) {
+    delegate_->OnLoadingStateChange(browser, is_loading, can_goback, can_goforward);
+  }
 }

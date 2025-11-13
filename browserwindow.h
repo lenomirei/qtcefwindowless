@@ -8,6 +8,7 @@
 #include "qtcefclient.h"
 
 class CefWidget;
+class TitleBar;
 
 class BrowserWindow : public QWidget, public QtCefClient::Delegate {
   Q_OBJECT
@@ -42,11 +43,18 @@ class BrowserWindow : public QWidget, public QtCefClient::Delegate {
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
+  // override from CefLoadHandler
+  virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                         CefRefPtr<CefFrame> frame,
+                         int http_status_code) override;
+  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool is_loading,
+                            bool can_goback, bool can_goforward);
+
  protected slots:
   void ReallyClose();
   void OnBackButtonClicked();
   void OnForwardButtonClicked();
-  void OnRefreshButtonClicked();
+  void OnReloadButtonClicked();
   void OnAddressBarEnterPressed(const QUrl& url);
 
   // browser content slots
@@ -63,8 +71,7 @@ class BrowserWindow : public QWidget, public QtCefClient::Delegate {
   float ratio_ = 1.0f;
   CefWidget* cef_widget_ = nullptr;
   // bool can_close_ = false;
-  QWidget* title_bar_ = nullptr;
-  QWidget* buttons_container_ = nullptr;
+  TitleBar* title_bar_ = nullptr;
   CefRefPtr<QtCefClient> client_;
 
   std::unordered_map<int /*CefBrowser ID*/, CefRefPtr<CefBrowser>> browser_map_;

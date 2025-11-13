@@ -26,6 +26,8 @@ set(PROJECT_SOURCES
         cefwidget.cpp
         addressbar.h
         addressbar.cpp
+        titlebar.h
+        titlebar.cpp
 )
 add_definitions(-DNOMINMAX)
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
