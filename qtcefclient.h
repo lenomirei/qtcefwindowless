@@ -35,15 +35,22 @@ class QtCefClient : public CefClient,
     virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                                       bool is_loading, bool can_goback,
                                       bool can_goforward) = 0;
+    virtual bool OnProcessMessageReceived(
+        CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+        CefProcessId source_process, CefRefPtr<CefProcessMessage> message) = 0;
   };
   QtCefClient(Delegate* delegate);
 
  protected:
   // override from CefClient
-  CefRefPtr<CefRenderHandler> GetRenderHandler() override;
-  CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
-  CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
-  CefRefPtr<CefLoadHandler> GetLoadHandler() override;
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override;
+  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override;
+  virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                CefProcessId source_process,
+                                CefRefPtr<CefProcessMessage> message) override;
 
   // override from CefRenderHandler
   virtual void OnPaint(CefRefPtr<CefBrowser> browser,
