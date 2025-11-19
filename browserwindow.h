@@ -7,6 +7,7 @@
 
 #include "qtcefclient.h"
 
+class BrowserTabBar;
 class CefWidget;
 class TitleBar;
 
@@ -17,12 +18,13 @@ class BrowserWindow : public QWidget, public QtCefClient::Delegate {
   BrowserWindow(QWidget* parent = nullptr);
   virtual ~BrowserWindow();
 
-  void CreateBrowser();
+  void CreateBrowser(const QUrl& url, int tab_index);
 
  protected:
   void showEvent(QShowEvent* event) override;
   void closeEvent(QCloseEvent* event) override;
   void InitUI();
+  void SwitchToTabBrowser(int index);
 
   // Delegate
   // override from CefRenderHandler
@@ -54,12 +56,21 @@ class BrowserWindow : public QWidget, public QtCefClient::Delegate {
   void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool is_loading,
                             bool can_goback, bool can_goforward);
 
+  // override from CefClient
+  virtual bool OnProcessMessageReceived(
+      CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+      CefProcessId source_process,
+      CefRefPtr<CefProcessMessage> message) override;
+
  protected slots:
   void ReallyClose();
   void OnBackButtonClicked();
   void OnForwardButtonClicked();
   void OnReloadButtonClicked();
   void OnAddressBarEnterPressed(const QUrl& url);
+  void OnTabBarClicked(int index);
+  void OnNewTabClicked();
+  void OnTabCloseRequested(int index);
 
   // browser content slots
   void onContentShow();
@@ -75,10 +86,12 @@ class BrowserWindow : public QWidget, public QtCefClient::Delegate {
   float ratio_ = 1.0f;
   CefWidget* cef_widget_ = nullptr;
   // bool can_close_ = false;
+  BrowserTabBar* tab_bar_ = nullptr;
   TitleBar* title_bar_ = nullptr;
   CefRefPtr<QtCefClient> client_;
 
   std::unordered_map<int /*CefBrowser ID*/, CefRefPtr<CefBrowser>> browser_map_;
+  std::unordered_map<int /*tab index*/, CefRefPtr<CefBrowser>> tab_browser_map_;
   CefRefPtr<CefBrowser> current_browser_ = nullptr;
   int current_browser_id_ = -1;
 

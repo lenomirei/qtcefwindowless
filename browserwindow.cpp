@@ -18,11 +18,14 @@
 #include <QWindow>
 
 #include "addressbar.h"
+#include "browsertabbar.h"
 #include "cef/include/base/cef_callback.h"
 #include "cef/include/wrapper/cef_closure_task.h"
 #include "cefwidget.h"
 #include "qtcefclient.h"
 #include "titlebar.h"
+
+#define DEFAULT_TAB_URL "https://www.baidu.com"
 
 BrowserWindow::BrowserWindow(QWidget* parent) : QWidget(parent) {
   client_ = new QtCefClient(this);
@@ -37,6 +40,17 @@ void BrowserWindow::InitUI() {
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
   setLayout(layout);
+
+  tab_bar_ = new BrowserTabBar(this);
+  tab_bar_->setExpanding(false);
+  tab_bar_->setTabsClosable(true);
+  layout->addWidget(tab_bar_);
+  connect(tab_bar_, &QTabBar::tabBarClicked, this, &BrowserWindow::OnTabBarClicked);
+  connect(tab_bar_, &BrowserTabBar::newTabClicked, this, &BrowserWindow::OnNewTabClicked);
+  connect(tab_bar_, &BrowserTabBar::tabCloseRequested, this, &BrowserWindow::OnTabCloseRequested, Qt::QueuedConnection);
+
+  tab_bar_->addTab("New Tab");
+  tab_bar_->setCurrentIndex(0);
 
   title_bar_ = new TitleBar(this);
   layout->addWidget(title_bar_);
@@ -75,7 +89,7 @@ void BrowserWindow::InitUI() {
   cef_widget_->show();
 
   if (current_browser_ == nullptr) {
-    CreateBrowser();
+    CreateBrowser(QUrl(DEFAULT_TAB_URL), 0);
   }
 }
 
@@ -88,13 +102,14 @@ void BrowserWindow::closeEvent(QCloseEvent* event) {
   if (browser_map_.empty()) {
     event->accept();
   } else {
-    for (const auto& [browser_id, browser] : browser_map_) {
-      CefPostTask(CefThreadId::TID_UI,
-                  base::BindOnce(
-                      [](CefRefPtr<CefBrowser> browser) {
-                        browser->GetHost()->CloseBrowser(false);
-                      },
-                      browser));
+    for (const auto& [tab_index, browser] : tab_browser_map_) {
+      emit tab_bar_->tabCloseRequested(tab_index);
+      // CefPostTask(CefThreadId::TID_UI,
+      //             base::BindOnce(
+      //                 [](CefRefPtr<CefBrowser> browser) {
+      //                   browser->GetHost()->CloseBrowser(false);
+      //                 },
+      //                 browser));
     }
     event->ignore();
   }
@@ -136,20 +151,22 @@ void BrowserWindow::OnAddressBarEnterPressed(const QUrl& url) {
   }
 }
 
-void BrowserWindow::CreateBrowser() {
+void BrowserWindow::CreateBrowser(const QUrl& url, int tab_index) {
   CefBrowserSettings browser_settings;
   browser_settings.windowless_frame_rate = 30;
   CefPostTask(
       CefThreadId::TID_UI,
       base::BindOnce(
-          [](CefRefPtr<CefClient> client, CefBrowserSettings browser_settings) {
+          [](CefRefPtr<CefClient> client, CefBrowserSettings browser_settings, QUrl url, int tab_index) {
             CefWindowInfo window_info;
             window_info.windowless_rendering_enabled = 1;
+            auto extra_info = CefDictionaryValue::Create();
+            extra_info->SetInt("tab_index", tab_index);
             CefBrowserHost::CreateBrowser(window_info, client,
-                                          "https://www.baidu.com",
-                                          browser_settings, nullptr, nullptr);
+                                          url.toString().toStdString(),
+                                          browser_settings, extra_info, nullptr);
           },
-          client_, browser_settings));
+          client_, browser_settings, url, tab_index));
 }
 
 void BrowserWindow::onContentShow() {}
@@ -332,10 +349,12 @@ void BrowserWindow::GetScreenInfo(CefRefPtr<CefBrowser> browser,
 void BrowserWindow::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   if (nullptr == browser) return;
 
-  if (current_browser_ == nullptr) {
-    current_browser_ = browser;
-    current_browser_id_ = browser->GetIdentifier();
+  if (current_browser_ != nullptr) {
+    current_browser_->GetHost()->WasHidden(true);
   }
+  current_browser_ = browser;
+  current_browser_id_ = browser->GetIdentifier();
+
   if (!browser->IsPopup()) {
     // TODO(lenomirei): Add to map. Maybe set current browser
     int browser_id = browser->GetIdentifier();
@@ -362,7 +381,7 @@ bool BrowserWindow::OnCursorChange(CefRefPtr<CefBrowser> browser,
 void BrowserWindow::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   int browser_id = browser->GetIdentifier();
   mt_.lock();
-  if (current_browser_->IsSame(browser)) {
+  if (current_browser_ && current_browser_->IsSame(browser)) {
     current_browser_ = nullptr;
     current_browser_id_ = -1;
   }
@@ -423,5 +442,73 @@ void BrowserWindow::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
           title_bar_->SetBackButtonDisabled(!can_goback);
           title_bar_->SetForwardButtonDisabled(!can_goforward);
         });
+  }
+}
+
+void BrowserWindow::OnTabBarClicked(int index) {
+  if (index == tab_bar_->count() - 1) {
+  } else {
+    // switch to specific browser
+    SwitchToTabBrowser(index);
+  }
+}
+
+void BrowserWindow::SwitchToTabBrowser(int index) {
+  mt_.lock();
+  if (nullptr != current_browser_)
+    current_browser_->GetHost()->WasHidden(true);
+  
+  if (auto find_res = tab_browser_map_.find(index); find_res != tab_browser_map_.end()) {
+    auto next_browser = tab_browser_map_[index];
+    next_browser->GetHost()->WasHidden(false);
+    current_browser_ = next_browser;
+    current_browser_id_ = next_browser->GetIdentifier();
+
+    title_bar_->UpdateAddressBarText(QString::fromStdString(
+        current_browser_->GetMainFrame()->GetURL().ToString()));
+  }
+  
+  mt_.unlock();
+}
+
+bool BrowserWindow::OnProcessMessageReceived(
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
+  
+  auto argument_list = message->GetArgumentList();
+  auto dic = argument_list->GetDictionary(0);
+  int tab_index = dic->GetInt("tab_index");
+  mt_.lock();
+  tab_browser_map_.emplace(tab_index, browser);
+  mt_.unlock();
+  return true;
+}
+
+void BrowserWindow::OnNewTabClicked() {
+  // click new tab button
+  int index = tab_bar_->count() - 1;
+  CreateBrowser(QUrl(DEFAULT_TAB_URL), index);
+  tab_bar_->addTab("New Tab");
+  tab_bar_->setCurrentIndex(index);
+}
+
+void BrowserWindow::OnTabCloseRequested(int index) {
+  if (auto find_res = tab_browser_map_.find(index); find_res != tab_browser_map_.end()) {
+    CefRefPtr<CefBrowser> browser = find_res->second;
+    tab_browser_map_.erase(find_res);
+    tab_bar_->removeTab(index);
+    if (index == tab_bar_->currentIndex()) {
+      int next_index = (index - 1 >= 0) ? index - 1 : index;
+      tab_bar_->setCurrentIndex(next_index);
+      SwitchToTabBrowser(next_index);
+    }
+    CefPostTask(CefThreadId::TID_UI,
+                  base::BindOnce(
+                      [](CefRefPtr<CefBrowser> browser) {
+                        browser->GetHost()->CloseBrowser(false);
+                      },
+                      browser));
+  } else {
+    // TODO(lenomirei): Add warning log here
   }
 }

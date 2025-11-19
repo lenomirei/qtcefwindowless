@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.14)
 
 project(qtcefwindowless VERSION 0.1 LANGUAGES CXX)
 
@@ -28,6 +28,8 @@ set(PROJECT_SOURCES
         addressbar.cpp
         titlebar.h
         titlebar.cpp
+        browsertabbar.h
+        browsertabbar.cpp
 )
 add_definitions(-DNOMINMAX)
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

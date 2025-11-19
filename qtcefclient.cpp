@@ -23,21 +23,30 @@ CefRefPtr<CefDisplayHandler> QtCefClient::GetDisplayHandler() { return this; }
 
 CefRefPtr<CefLoadHandler> QtCefClient::GetLoadHandler() { return this; }
 
+bool QtCefClient::OnProcessMessageReceived(
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefProcessId source_process, CefRefPtr<CefProcessMessage> message) {
+  if (nullptr != delegate_) {
+    return delegate_->OnProcessMessageReceived(browser, frame, source_process, message);
+  }
+  return false;
+}
+
 void QtCefClient::OnPaint(CefRefPtr<CefBrowser> browser,
                           CefRenderHandler::PaintElementType type,
                           const CefRenderHandler::RectList& dirtyRects,
                           const void* buffer, int width, int height) {
-  if (delegate_)
+  if (nullptr != delegate_)
     delegate_->OnPaint(browser, type, dirtyRects, buffer, width, height);
 }
 
 void QtCefClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) {
-  if (delegate_) delegate_->GetViewRect(browser, rect);
+  if (nullptr != delegate_) delegate_->GetViewRect(browser, rect);
 }
 
 bool QtCefClient::GetScreenInfo(CefRefPtr<CefBrowser> browser,
                                 CefScreenInfo& screen_info) {
-  if (delegate_) {
+  if (nullptr != delegate_) {
     delegate_->GetScreenInfo(browser, screen_info);
     return true;
   }
@@ -45,13 +54,13 @@ bool QtCefClient::GetScreenInfo(CefRefPtr<CefBrowser> browser,
 }
 
 void QtCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
-  if (delegate_) delegate_->OnAfterCreated(browser);
+  if (nullptr != delegate_) delegate_->OnAfterCreated(browser);
 }
 
 bool QtCefClient::OnCursorChange(CefRefPtr<CefBrowser> browser,
                                  CefCursorHandle cursor, cef_cursor_type_t type,
                                  const CefCursorInfo& custom_cursor_info) {
-  if (delegate_)
+  if (nullptr != delegate_)
     return delegate_->OnCursorChange(browser, cursor, type, custom_cursor_info);
   else
     return false;
@@ -64,21 +73,21 @@ bool QtCefClient::DoClose(CefRefPtr<CefBrowser> browser) {
 }
 
 void QtCefClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
-  if (delegate_) {
+  if (nullptr != delegate_) {
     delegate_->OnBeforeClose(browser);
   }
 }
 
 void QtCefClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame, CefLoadHandler::TransitionType type) {
-  if (delegate_) {
+  if (nullptr != delegate_) {
     delegate_->OnLoadStart(browser, frame, type);
   }
 }
 
 void QtCefClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                             CefRefPtr<CefFrame> frame, int http_status_code) {
-  if (delegate_) {
+  if (nullptr != delegate_) {
     delegate_->OnLoadEnd(browser, frame, http_status_code);
   }
 }
@@ -86,7 +95,7 @@ void QtCefClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
 void QtCefClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                                        bool is_loading, bool can_goback,
                                        bool can_goforward) {
-  if (delegate_) {
+  if (nullptr != delegate_) {
     delegate_->OnLoadingStateChange(browser, is_loading, can_goback,
                                     can_goforward);
   }
